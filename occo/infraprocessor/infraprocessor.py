@@ -97,7 +97,7 @@ class InfraProcessor(AbstractInfraProcessor):
 
     class CreateEnvironment(Command):
         def __init__(self, environment_id):
-            super(CreateEnvironment, self).__init__()
+            Command.__init__(self)
             self.environment_id = environment_id
         def perform(self, infraprocessor):
             infraprocessor.servicecomposer.create_environment(
@@ -105,7 +105,7 @@ class InfraProcessor(AbstractInfraProcessor):
 
     class CreateNode(Command):
         def __init__(self, node):
-            super(CreateNode, self).__init__()
+            Command.__init__(self)
             self.node = node
         def perform(self, infraprocessor):
             self.node.unique_id = str(uuid.uuid4())
@@ -114,7 +114,7 @@ class InfraProcessor(AbstractInfraProcessor):
 
     class DropNode(Command):
         def __init__(self, node_id):
-            super(DropNode, self).__init__()
+            Command.__init__(self)
             self.node_id = node_id
         def perform(self, infraprocessor):
             infraprocessor.cloudhandler.drop_node(self.node_id)
@@ -122,7 +122,7 @@ class InfraProcessor(AbstractInfraProcessor):
 
     class DropEnvironment(Command):
         def __init__(self, environment_id):
-            super(DropEnvironment, self).__init__()
+            Command.__init__(self)
             self.environment_id = environment_id
         def perform(self, infraprocessor):
             infraprocessor.servicecomposer.drop_environment(self.environment_id)
@@ -147,7 +147,7 @@ class RemoteInfraProcessor(InfraProcessor):
 
     class Mgmt_SkipUntil(Command):
         def __init__(self, deadline):
-            super(Mgmt_SkipUntil, self).__init__()
+            Command.__init__(self)
             self.deadline = deadline
         def perform(self, infraprocessor):
             infraprocessor.cancel_upcoming(self.deadline)
