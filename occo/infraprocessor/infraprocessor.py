@@ -3,7 +3,7 @@
 #
 
 __all__ = ['RemoteInfraProcessor', 'InfraProcessor',
-           'Strategy', 'SequentialStrategy', 'ParalallelProcessesStrategy']
+           'Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy']
 
 import logging
 import occo.util as util
