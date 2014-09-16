@@ -13,19 +13,23 @@ import threading
 
 log = logging.getLogger('occo.util.ip')
 
+###################################################
 # Strategies to process parallelizable instructions
+###
 
 class Strategy(object):
     def __init__(self):
         self.cancel_event = threading.Event()
-    def perform(self, infraprocessor, instruction_list):
-        raise NotImplementedError()
+
     @property
     def cancelled(self):
         return self.cancel_event.is_set()
     def cancel_pending(self):
         # Where applicable
         self.cancel_event.set()
+
+    def perform(self, infraprocessor, instruction_list):
+        raise NotImplementedError()
 
 class SequentialStrategy(Strategy):
     def perform(self, infraprocessor, instruction_list):
@@ -47,7 +51,9 @@ class RemotePushStrategy(Strategy):
                 break
             self.queue.push_message(i)
 
+##########################
 # Infrastructure Processor
+###
 
 class Command(object):
     def __init__(self):
@@ -77,7 +83,7 @@ class AbstractInfraProcessor(object):
     def cri_drop_environment(self, environment_id):
         return self.__class__.DropEnvironment(environment_id)
 
-    def cancel_upcoming(self, deadline):
+    def cancel_pending(self, deadline):
         self.cancelled_until = deadline
         self.strategy.cancel_pending()
 
@@ -121,6 +127,9 @@ class InfraProcessor(AbstractInfraProcessor):
         def perform(self, infraprocessor):
             infraprocessor.servicecomposer.drop_environment(self.environment_id)
 
+##################
+# Remote interface
+##
 
 class RemoteInfraProcessor(InfraProcessor):
     def __init__(self, destination_queue):
@@ -133,7 +142,7 @@ class RemoteInfraProcessor(InfraProcessor):
         AbstractInfraProcessor.__init__(
             self, process_strategy=RemotePushStrategy(destination_queue))
 
-    def cancel_upcoming(self, deadline):
+    def cancel_pending(self, deadline):
         self.push_instructions([Mgmt_SkipUntil(deadline)])
 
     class Mgmt_SkipUntil(Command):
