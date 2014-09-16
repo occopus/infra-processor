@@ -96,12 +96,12 @@ class InfraProcessor(AbstractInfraProcessor):
         self.servicecomposer = servicecomposer
 
     class CreateEnvironment(Command):
-        def __init__(self, environment_name):
+        def __init__(self, environment_id):
             super(CreateEnvironment, self).__init__()
-            self.environment_name = environment_name
+            self.environment_id = environment_id
         def perform(self, infraprocessor):
             infraprocessor.servicecomposer.create_environment(
-                self.environment_name)
+                self.environment_id)
 
     class CreateNode(Command):
         def __init__(self, node):
