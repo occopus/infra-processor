@@ -71,7 +71,7 @@ class AbstractInfraProcessor(object):
 
     def push_instructions(self, instruction_list):
         self.strategy.cancel_event.clear()
-        filtered_list = filter(self.not_cancelled, instruction_list)
+        filtered_list = filter(self._not_cancelled, instruction_list)
         self.strategy.perform(self, filtered_list)
 
     def cri_create_env(self, environment_id):
