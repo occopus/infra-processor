@@ -69,7 +69,10 @@ class AbstractInfraProcessor(object):
     def _not_cancelled(self, instruction):
         return instruction.timestamp > self.cancelled_until
 
-    def push_instructions(self, instruction_list):
+    def push_instructions(self, instructions):
+        instruction_list = \
+            instructions if hasattr(instructions, '__iter__') \
+            else (instructions,)
         self.strategy.cancel_event.clear()
         filtered_list = filter(self._not_cancelled, instruction_list)
         self.strategy.perform(self, filtered_list)
