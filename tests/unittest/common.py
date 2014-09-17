@@ -15,6 +15,10 @@ logging.config.dictConfig(cfg.logging)
 
 log = logging.getLogger('occo.unittests')
 
+import uuid
+def uid():
+    return str(uuid.uuid4())
+
 class DummyNode(object):
     def __init__(self, id, environment_id):
         self._id = id
@@ -30,7 +34,7 @@ class DummyNode(object):
     def started(self):
         return self._started
     def __repr__(self):
-        return '(%s_%r)'%(self.id, self.started)
+        return '%s_%r'%(self.id, self.started)
 
 class DummyInfoBroker(object):
     def __init__(self):

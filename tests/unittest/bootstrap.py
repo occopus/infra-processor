@@ -27,7 +27,7 @@ class BaseTest(unittest.TestCase):
         sc.create_environment(eid)
         node = DummyNode(uid(), eid)
         sc.register_node(node)
-        self.assertEqual(repr(ib), '%s:[(%s_False)]'%(eid, node.id))
+        self.assertEqual(repr(ib), '%s:[%s_False]'%(eid, node.id))
     def test_ch_create_node(self):
         ib = DummyInfoBroker()
         sc = DummyServiceComposer(ib)
@@ -37,7 +37,7 @@ class BaseTest(unittest.TestCase):
         node = DummyNode(uid(), eid)
         sc.register_node(node)
         ch.create_node(node)
-        self.assertEqual(repr(ib), '%s:[(%s_True)]'%(eid, node.id))
+        self.assertEqual(repr(ib), '%s:[%s_True]'%(eid, node.id))
     def test_ch_drop_node(self):
         ib = DummyInfoBroker()
         sc = DummyServiceComposer(ib)
@@ -48,7 +48,7 @@ class BaseTest(unittest.TestCase):
         sc.register_node(node)
         ch.create_node(node)
         ch.drop_node(node.id)
-        self.assertEqual(repr(ib), '%s:[(%s_False)]'%(eid, node.id))
+        self.assertEqual(repr(ib), '%s:[%s_False]'%(eid, node.id))
     def test_sc_drop_node(self):
         ib = DummyInfoBroker()
         sc = DummyServiceComposer(ib)
