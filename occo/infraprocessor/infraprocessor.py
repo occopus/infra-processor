@@ -46,6 +46,7 @@ class RemotePushStrategy(Strategy):
     def __init__(self, destination_queue):
         self.queue = destination_queue
     def perform(self, infraprocessor, instruction_list):
+        #TODO push as list; keep instructions together
         for i in instruction_list:
             if self.cancelled:
                 break
