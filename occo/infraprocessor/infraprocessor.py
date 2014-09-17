@@ -108,9 +108,8 @@ class InfraProcessor(AbstractInfraProcessor):
             Command.__init__(self)
             self.node = node
         def perform(self, infraprocessor):
-            self.node.unique_id = str(uuid.uuid4())
-            infraprocessor.servicecomposer.register_node(node)
-            infraprocessor.cloudhandler.create_node(node)
+            infraprocessor.servicecomposer.register_node(self.node)
+            infraprocessor.cloudhandler.create_node(self.node)
 
     class DropNode(Command):
         def __init__(self, node_id):
