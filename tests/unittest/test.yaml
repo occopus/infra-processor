@@ -5,9 +5,12 @@ default_mqconfig: &MQCFG
     exhange: ''
     user: test
     password: test
-server_mqconfig: &SERVER_MQCFG
+ip_mqconfig: &IP_MQCFG
     <<: *MQCFG
     queue: remote_infobroker_test
+ctl_mqconfig: &CTL_MQCFG
+    <<: *MQCFG
+    queue: remote_infobroker_test_ctl
 logging:
     version: 1
     root:
