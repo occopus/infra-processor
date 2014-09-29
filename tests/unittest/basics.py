@@ -12,8 +12,8 @@ import threading
 class BaseTest(unittest.TestCase):
     def setUp(self):
         self.ib = DummyInfoBroker()
-        self.sc = DummyServiceComposer()
-        self.ch = DummyCloudHandler()
+        self.sc = DummyServiceComposer(self.ib)
+        self.ch = DummyCloudHandler(self.ib)
     def test_cmd_1(self):
         self.infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_create_env(None).__class__,
