@@ -68,6 +68,11 @@ class AbstractInfraProcessor(object):
         self.strategy = process_strategy
         self.cancelled_until = 0
 
+    def __enter__(self):
+        return self
+    def __exit__(self, type, value, tb):
+        pass
+
     def _not_cancelled(self, instruction):
         return instruction.timestamp > self.cancelled_until
 
@@ -147,6 +152,12 @@ class RemoteInfraProcessor(InfraProcessor):
             self, process_strategy=RemotePushStrategy(
                     comm.AsynchronProducer(**destination_queue_cfg)))
 
+    def __enter__(self):
+        self.strategy.queue.__enter__()
+        return self
+    def __exit__(self, type, value, tb):
+        self.strategy.queue.__exit__(type, value, traceback)
+
     def cancel_pending(self, deadline):
         self.push_instructions([Mgmt_SkipUntil(deadline)])
 
@@ -171,6 +182,20 @@ class RemoteInfraProcessorSkeleton(object):
             self.process_ip_msg, **ip_queue_cfg)
         self.control_consumer = comm.EventDrivenConsumer(
             self.process_control_msg, **control_queue_cfg)
+
+    def __enter__(self):
+        self.ip_consumer.__enter__()
+        try:
+            self.control_consumer.__enter__()
+        except:
+            self.control_consumer.__exit__(None, None, None)
+            raise
+        return self
+    def __exit__(self, type, value, tb):
+        try:
+            self.ip_consumer.__exit__(type, value, tb)
+        finally:
+            self.control_consumer.__exit__(type, value, tb)
 
     @property
     def cancelled(self):

@@ -22,8 +22,10 @@ class BaseTest(unittest.TestCase):
 
         eid = uid()
         cmd = stub.cri_create_env(eid)
-        stub.push_instructions(cmd)
-        skeleton.start_consuming()
+        with stub:
+            stub.push_instructions(cmd)
+        with skeleton:
+            skeleton.start_consuming()
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
 #    def test_create_node(self):
 #        infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
