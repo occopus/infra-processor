@@ -36,10 +36,11 @@ logging:
             filename: rabbit.log
 
     loggers:
+        pika:
+            propagate: false
+            level: ERROR
+            handlers: [console]
         occo:
             propagate: false
             level: DEBUG
             handlers: [console]
-        flogger:
-            level: WARNING
-            handlers: [file]

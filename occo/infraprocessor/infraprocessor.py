@@ -11,7 +11,7 @@ import occo.util.communication as comm
 import time
 import threading
 
-log = logging.getLogger('occo.util.ip')
+log = logging.getLogger('occo.infraprocessor')
 
 ###################################################
 # Strategies to process parallelizable instructions
