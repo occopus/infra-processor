@@ -44,6 +44,7 @@ class ParallelProcessesStrategy(Strategy):
 
 class RemotePushStrategy(Strategy):
     def __init__(self, destination_queue):
+        super(RemotePushStrategy, self).__init__()
         self.queue = destination_queue
     def perform(self, infraprocessor, instruction_list):
         #TODO push as list; keep instructions together
