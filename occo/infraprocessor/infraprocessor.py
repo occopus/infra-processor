@@ -136,7 +136,7 @@ class InfraProcessor(AbstractInfraProcessor):
 ##
 
 class RemoteInfraProcessor(InfraProcessor):
-    def __init__(self, destination_queue):
+    def __init__(self, destination_queue_cfg):
         # Calling only the AbstractIP's __init__
         # (and skipping InfraProcessor.__init__) is intentional:
         #
@@ -144,7 +144,8 @@ class RemoteInfraProcessor(InfraProcessor):
         # but this class does not need the IP's backends (infobroker,
         # cloudhandler, etc.)
         AbstractInfraProcessor.__init__(
-            self, process_strategy=RemotePushStrategy(destination_queue))
+            self, process_strategy=RemotePushStrategy(
+                    comm.AsynchronProducer(**destination_queue_cfg)))
 
     def cancel_pending(self, deadline):
         self.push_instructions([Mgmt_SkipUntil(deadline)])
