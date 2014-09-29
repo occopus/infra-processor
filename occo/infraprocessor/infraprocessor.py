@@ -156,7 +156,7 @@ class RemoteInfraProcessor(InfraProcessor):
         self.strategy.queue.__enter__()
         return self
     def __exit__(self, type, value, tb):
-        self.strategy.queue.__exit__(type, value, traceback)
+        self.strategy.queue.__exit__(type, value, tb)
 
     def cancel_pending(self, deadline):
         self.push_instructions([Mgmt_SkipUntil(deadline)])
