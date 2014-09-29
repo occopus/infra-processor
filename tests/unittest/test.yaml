@@ -3,14 +3,16 @@ default_mqconfig: &MQCFG
     host: 192.168.152.184
     vhost: test
     exhange: ''
+    routing_key: ''
     user: test
     password: test
+    queue: ''
 ip_mqconfig: &IP_MQCFG
     <<: *MQCFG
-    queue: remote_infobroker_test
+    routing_key: remote_infobroker_test
 ctl_mqconfig: &CTL_MQCFG
     <<: *MQCFG
-    queue: remote_infobroker_test_ctl
+    routing_key: remote_infobroker_test_ctl
 logging:
     version: 1
     root:
