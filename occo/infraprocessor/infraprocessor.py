@@ -203,11 +203,15 @@ class RemoteInfraProcessorSkeleton(object):
 
     def start_consuming(self):
         while not self.cancelled:
+            log.debug("Processing control messages")
             self.control_consumer.start_consuming()
+            log.debug("Processing normal messages")
             self.ip_consumer.start_consuming()
+            time.sleep(0) # Yield CPU
 
     def process_ip_msg(self, instruction_list, *args, **kwargs):
         # Return value not needed -- this is NOT an rpc queue
+        log.debug("Received normal message")
         try:
             self.backend_ip.perform(instruction_list)
         except Exception as ex:
@@ -217,6 +221,7 @@ class RemoteInfraProcessorSkeleton(object):
         # This is an RPC queue.
         # Control messages are immediately performed, disregarding
         # their timestamp and skip_until.
+        log.debug("Received control message")
         try:
             retval = instruction.perform(self.backend_ip)
             return comm.Response(200, retval)
