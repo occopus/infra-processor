@@ -31,19 +31,19 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(self.infrap.cri_drop_node(None).__class__,
                          ip.InfraProcessor.DropNode)
     def test_remote_cmd_1(self):
-        self.infrap = ip.RemoteInfraProcessor(None)
+        self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_create_env(None).__class__,
                          ip.InfraProcessor.CreateEnvironment)
     def test_remote_cmd_2(self):
-        self.infrap = ip.RemoteInfraProcessor(None)
+        self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_create_node(None).__class__,
                          ip.InfraProcessor.CreateNode)
     def test_remote_cmd_3(self):
-        self.infrap = ip.RemoteInfraProcessor(None)
+        self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_drop_environment(None).__class__,
                          ip.InfraProcessor.DropEnvironment)
     def test_remote_cmd_4(self):
-        self.infrap = ip.RemoteInfraProcessor(None)
+        self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_drop_node(None).__class__,
                          ip.InfraProcessor.DropNode)
 
