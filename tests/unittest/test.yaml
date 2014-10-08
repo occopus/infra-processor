@@ -6,12 +6,14 @@ default_mqconfig: &MQCFG
     routing_key: ''
     user: test
     password: test
-    queue: ''
+    queue: test
 ip_mqconfig: &IP_MQCFG
     <<: *MQCFG
+    queue: remote_infobroker_test
     routing_key: remote_infobroker_test
 ctl_mqconfig: &CTL_MQCFG
     <<: *MQCFG
+    queue: remote_infobroker_test_ctl
     routing_key: remote_infobroker_test_ctl
 logging:
     version: 1
@@ -43,4 +45,4 @@ logging:
         occo:
             propagate: false
             level: DEBUG
-            handlers: [console]
+            handlers: [console, file]
