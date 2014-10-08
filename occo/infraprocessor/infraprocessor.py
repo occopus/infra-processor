@@ -228,10 +228,7 @@ class RemoteInfraProcessorSkeleton(object):
     def process_ip_msg(self, instruction_list, *args, **kwargs):
         # Return value not needed -- this is NOT an rpc queue
         log.debug("Received normal message")
-        try:
-            self.backend_ip.perform(instruction_list)
-        except Exception as ex:
-            pass
+        self.backend_ip.push_instructions(instruction_list)
 
     def process_control_msg(self, instruction, *args, **kwargs):
         # This is an RPC queue.
