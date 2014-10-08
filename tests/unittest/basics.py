@@ -17,35 +17,35 @@ class BaseTest(unittest.TestCase):
     def test_cmd_1(self):
         self.infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_create_env(None).__class__,
-                         ip.InfraProcessor.CreateEnvironment)
+                         ip.CreateEnvironment)
     def test_cmd_2(self):
         self.infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_create_node(None).__class__,
-                         ip.InfraProcessor.CreateNode)
+                         ip.CreateNode)
     def test_cmd_3(self):
         self.infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_drop_environment(None).__class__,
-                         ip.InfraProcessor.DropEnvironment)
+                         ip.DropEnvironment)
     def test_cmd_4(self):
         self.infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_drop_node(None).__class__,
-                         ip.InfraProcessor.DropNode)
+                         ip.DropNode)
     def test_remote_cmd_1(self):
         self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_create_env(None).__class__,
-                         ip.InfraProcessor.CreateEnvironment)
+                         ip.CreateEnvironment)
     def test_remote_cmd_2(self):
         self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_create_node(None).__class__,
-                         ip.InfraProcessor.CreateNode)
+                         ip.CreateNode)
     def test_remote_cmd_3(self):
         self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_drop_environment(None).__class__,
-                         ip.InfraProcessor.DropEnvironment)
+                         ip.DropEnvironment)
     def test_remote_cmd_4(self):
         self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_drop_node(None).__class__,
-                         ip.InfraProcessor.DropNode)
+                         ip.DropNode)
 
 if __name__ == '__main__':
     unittest.main()

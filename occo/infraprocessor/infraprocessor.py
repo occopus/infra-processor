@@ -3,7 +3,9 @@
 #
 
 __all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton', 'InfraProcessor',
-           'Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy']
+           'Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy',
+           'CreateEnvironment', 'CreateNode', 'DropNode', 'DropEnvironment',
+           'Mgmt_SkipUntil']
 
 import logging
 import occo.util as util
@@ -88,25 +90,64 @@ class AbstractInfraProcessor(object):
         return instruction.timestamp > self.cancelled_until
 
     def push_instructions(self, instructions):
+        # Make `instructions' iterable if necessary
         instruction_list = \
             instructions if hasattr(instructions, '__iter__') \
             else (instructions,)
         self.strategy.cancel_event.clear()
-        filtered_list = filter(self._not_cancelled, instruction_list)
+        filtered_list = list(filter(self._not_cancelled, instruction_list))
+        log.debug('Filtered list: %r', filtered_list)
         self.strategy.perform(self, filtered_list)
 
     def cri_create_env(self, environment_id):
-        return self.__class__.CreateEnvironment(environment_id)
+        raise NotImplementedError()
     def cri_create_node(self, node):
-        return self.__class__.CreateNode(node)
+        raise NotImplementedError()
     def cri_drop_node(self, node_id):
-        return self.__class__.DropNode(node_id)
+        raise NotImplementedError()
     def cri_drop_environment(self, environment_id):
-        return self.__class__.DropEnvironment(environment_id)
+        raise NotImplementedError()
 
     def cancel_pending(self, deadline):
         self.cancelled_until = deadline
         self.strategy.cancel_pending()
+
+###############
+## IP Commands
+
+class CreateEnvironment(Command):
+    def __init__(self, environment_id):
+        Command.__init__(self)
+        self.environment_id = environment_id
+    def perform(self, infraprocessor):
+        infraprocessor.servicecomposer.create_environment(
+            self.environment_id)
+
+class CreateNode(Command):
+    def __init__(self, node):
+        Command.__init__(self)
+        self.node = node
+    def perform(self, infraprocessor):
+        infraprocessor.servicecomposer.register_node(self.node)
+        infraprocessor.cloudhandler.create_node(self.node)
+
+class DropNode(Command):
+    def __init__(self, node_id):
+        Command.__init__(self)
+        self.node_id = node_id
+    def perform(self, infraprocessor):
+        infraprocessor.cloudhandler.drop_node(self.node_id)
+        infraprocessor.servicecomposer.drop_node(self.node_id)
+
+class DropEnvironment(Command):
+    def __init__(self, environment_id):
+        Command.__init__(self)
+        self.environment_id = environment_id
+    def perform(self, infraprocessor):
+        infraprocessor.servicecomposer.drop_environment(self.environment_id)
+
+####################
+## IP implementation
 
 class InfraProcessor(AbstractInfraProcessor):
     def __init__(self, infobroker, cloudhandler, servicecomposer,
@@ -116,40 +157,25 @@ class InfraProcessor(AbstractInfraProcessor):
         self.cloudhandler = cloudhandler
         self.servicecomposer = servicecomposer
 
-    class CreateEnvironment(Command):
-        def __init__(self, environment_id):
-            Command.__init__(self)
-            self.environment_id = environment_id
-        def perform(self, infraprocessor):
-            infraprocessor.servicecomposer.create_environment(
-                self.environment_id)
-
-    class CreateNode(Command):
-        def __init__(self, node):
-            Command.__init__(self)
-            self.node = node
-        def perform(self, infraprocessor):
-            infraprocessor.servicecomposer.register_node(self.node)
-            infraprocessor.cloudhandler.create_node(self.node)
-
-    class DropNode(Command):
-        def __init__(self, node_id):
-            Command.__init__(self)
-            self.node_id = node_id
-        def perform(self, infraprocessor):
-            infraprocessor.cloudhandler.drop_node(self.node_id)
-            infraprocessor.servicecomposer.drop_node(self.node_id)
-
-    class DropEnvironment(Command):
-        def __init__(self, environment_id):
-            Command.__init__(self)
-            self.environment_id = environment_id
-        def perform(self, infraprocessor):
-            infraprocessor.servicecomposer.drop_environment(self.environment_id)
+    def cri_create_env(self, environment_id):
+        return CreateEnvironment(environment_id)
+    def cri_create_node(self, node):
+        return CreateNode(node)
+    def cri_drop_node(self, node_id):
+        return DropNode(node_id)
+    def cri_drop_environment(self, environment_id):
+        return DropEnvironment(environment_id)
 
 ##################
 # Remote interface
 ##
+
+class Mgmt_SkipUntil(Command):
+    def __init__(self, deadline):
+        Command.__init__(self)
+        self.deadline = deadline
+    def perform(self, infraprocessor):
+        infraprocessor.cancel_upcoming(self.deadline)
 
 class RemoteInfraProcessor(InfraProcessor):
     def __init__(self, destination_queue_cfg):
@@ -171,14 +197,6 @@ class RemoteInfraProcessor(InfraProcessor):
 
     def cancel_pending(self, deadline):
         self.push_instructions([Mgmt_SkipUntil(deadline)])
-
-    class Mgmt_SkipUntil(Command):
-        def __init__(self, deadline):
-            Command.__init__(self)
-            self.deadline = deadline
-        def perform(self, infraprocessor):
-            infraprocessor.cancel_upcoming(self.deadline)
-
 
 class RemoteInfraProcessorSkeleton(object):
     def __init__(self, backend_ip, ip_queue_cfg, control_queue_cfg, cancel_event=None):
@@ -223,10 +241,7 @@ class RemoteInfraProcessorSkeleton(object):
     def process_ip_msg(self, instruction_list, *args, **kwargs):
         # Return value not needed -- this is NOT an rpc queue
         log.debug("Received normal message")
-        try:
-            self.backend_ip.perform(instruction_list)
-        except Exception as ex:
-            pass
+        self.backend_ip.push_instructions(instruction_list)
 
     def process_control_msg(self, instruction, *args, **kwargs):
         # This is an RPC queue.
