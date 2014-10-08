@@ -77,11 +77,13 @@ class AbstractInfraProcessor(object):
         return instruction.timestamp > self.cancelled_until
 
     def push_instructions(self, instructions):
+        # Make `instructions' iterable if necessary
         instruction_list = \
             instructions if hasattr(instructions, '__iter__') \
             else (instructions,)
         self.strategy.cancel_event.clear()
-        filtered_list = filter(self._not_cancelled, instruction_list)
+        filtered_list = list(filter(self._not_cancelled, instruction_list))
+        log.debug('Filtered list: %r', filtered_list)
         self.strategy.perform(self, filtered_list)
 
     def cri_create_env(self, environment_id):
