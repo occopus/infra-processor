@@ -3,7 +3,9 @@
 #
 
 __all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton', 'InfraProcessor',
-           'Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy']
+           'Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy',
+           'CreateEnvironment', 'CreateNode', 'DropNode', 'DropEnvironment',
+           'Mgmt_SkipUntil']
 
 import logging
 import occo.util as util
