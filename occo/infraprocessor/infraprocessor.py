@@ -12,6 +12,7 @@ import occo.util as util
 import occo.util.communication as comm
 import time
 import threading
+import uuid
 
 log = logging.getLogger('occo.infraprocessor')
 
@@ -128,6 +129,7 @@ class CreateNode(Command):
         Command.__init__(self)
         self.node = node
     def perform(self, infraprocessor):
+        self.node.id = str(uuid.uuid4())
         infraprocessor.servicecomposer.register_node(self.node)
         infraprocessor.cloudhandler.create_node(self.node)
 
