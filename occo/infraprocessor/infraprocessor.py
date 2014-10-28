@@ -41,9 +41,27 @@ class SequentialStrategy(Strategy):
                 break
             i.perform(infraprocessor)
 
+class PerformThread(threading.Thread):
+    def __init__(self, infraprocessor, instruction):
+        super(PerformThread, self).__init__()
+        self.infraprocessor = infraprocessor
+        self.instruction = instruction
+    def run(self):
+        try:
+            self.instruction.perform(self.infraprocessor)
+        except (Exception, KeyboardInterrupt):
+            log.exception("Unhandled exception in thread:")
 class ParallelProcessesStrategy(Strategy):
     def perform(self, infraprocessor, instruction_list):
-        raise NotImplementedError() #TODO
+        threads = [PerformThread(infraprocessor, i) for i in instruction_list]
+        for t in threads:
+            log.debug('Starting thread for %r', t.instruction)
+            t.start()
+            log.debug('STARTED Thread for %r', t.instruction)
+        for t in threads:
+            log.debug('Joining thread for %r', t.instruction)
+            t.join()
+            log.debug('FINISHED Thread for %r', t.instruction)
 
 class RemotePushStrategy(Strategy):
     def __init__(self, destination_queue):
