@@ -129,7 +129,7 @@ class CreateNode(Command):
         Command.__init__(self)
         self.node = node
     def perform(self, infraprocessor):
-        self.node.id = str(uuid.uuid4())
+        self.node['id'] = str(uuid.uuid4())
         infraprocessor.servicecomposer.register_node(self.node)
         infraprocessor.cloudhandler.create_node(self.node)
 
