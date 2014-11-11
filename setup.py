@@ -10,6 +10,7 @@ setuptools.setup(
     version='0.1.0',
     author='Adam Visegradi',
     author_email='adam.visegradi@sztaki.mta.hu',
+    namespace_packages=['occo'],
     packages=['occo.infraprocessor'],
     scripts=[],
     url='http://www.lpds.sztaki.hu/',
