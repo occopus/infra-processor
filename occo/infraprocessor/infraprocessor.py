@@ -78,16 +78,6 @@ class RemotePushStrategy(Strategy):
 # Infrastructure Processor
 ###
 
-class YAMLConstructable(object):
-    def __call__(self, cls):
-        """
-        A YAML constructor will also be registered for the decorated class, so it
-        can be instantiated automatically by ``yaml.load()``
-        """
-        def yaml_constructor(loader, node):
-            return cls() if type(node) is yaml.ScalarNode \
-                    else cls(**loader.construct_mapping(node, deep=True))
-        yaml.add_constructor('!%s'%cls.__name__, yaml_constructor)
 
 class Command(object):
     def __init__(self):
