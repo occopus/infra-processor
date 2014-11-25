@@ -146,6 +146,3 @@ class BaseTest(unittest.TestCase):
             repr(self.ib),
             '{0}:[{1}]'.format(eid, ', '.join('{0}_True'.format(n.id)
                                                 for n in nodes)))
-
-if __name__ == '__main__':
-    unittest.main()

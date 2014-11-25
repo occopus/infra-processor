@@ -79,6 +79,3 @@ class BaseTest(unittest.TestCase):
         sc.drop_node(node.id)
         sc.drop_environment(eid)
         self.assertEqual(repr(ib), '')
-
-if __name__ == '__main__':
-    unittest.main()
