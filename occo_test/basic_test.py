@@ -48,6 +48,3 @@ class BaseTest(unittest.TestCase):
         self.infrap = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_drop_node(Stuff()).__class__,
                          ip.DropNode)
-
-if __name__ == '__main__':
-    unittest.main()
