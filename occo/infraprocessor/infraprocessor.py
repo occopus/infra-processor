@@ -129,17 +129,32 @@ class CreateEnvironment(Command):
         Command.__init__(self)
         self.environment_id = environment_id
     def perform(self, infraprocessor):
-        infraprocessor.servicecomposer.create_environment(
-            self.environment_id)
+        infraprocessor.servicecomposer.create_environment(self.environment_id)
 
 class CreateNode(Command):
     def __init__(self, node):
         Command.__init__(self)
         self.node = node
     def perform(self, infraprocessor):
-        self.node['id'] = str(uuid.uuid4())
-        infraprocessor.servicecomposer.register_node(self.node)
-        infraprocessor.cloudhandler.create_node(self.node)
+        backend_id = node.get('backend_id', None)
+        infra_id = node['infra_id']
+        node_id = str(uuid.uuid4())
+        infra_desc = self.ib.get('infrastructure.static_description', infra_id)
+        auth_data = self.ib.get('backends.auth_data',
+                                node['backend_id'],
+                                infra_desc['user_id'])
+        node_description = self.ib.get('node_definition', node['type'])
+
+        resolved_node = dict(id=node_id,
+                             backend_id=backend_id,
+                             auth_data=auth_data,
+                             )
+        resolved_node.update(node_description)
+
+        infraprocessor.servicecomposer.register_node(resolved_node)
+        instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
+
+        self.uds.register_started_node(infra_id, node_id, instance_id)
 
 class DropNode(Command):
     def __init__(self, node_id):
@@ -161,8 +176,10 @@ class DropEnvironment(Command):
 
 class InfraProcessor(AbstractInfraProcessor):
     def __init__(self, infobroker, cloudhandler, servicecomposer,
-                 process_strategy=SequentialStrategy()):
+                 process_strategy=SequentialStrategy(),
+                 **config):
         super(InfraProcessor, self).__init__(process_strategy=process_strategy)
+        self.__dict__.update(config)
         self.ib = infobroker
         self.cloudhandler = cloudhandler
         self.servicecomposer = servicecomposer
