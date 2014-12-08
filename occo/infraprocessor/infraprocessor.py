@@ -158,7 +158,7 @@ class CreateNode(Command):
                              )
         resolved_node.update(node_description)
         log.debug("Resolved node description:\n%s",
-                  yaml.dumps(resolved_node, default_flow_style=False))
+                  yaml.dump(resolved_node, default_flow_style=False))
 
         infraprocessor.servicecomposer.register_node(resolved_node)
         instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
