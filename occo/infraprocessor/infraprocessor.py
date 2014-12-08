@@ -155,6 +155,7 @@ class CreateNode(Command):
         resolved_node = dict(id=node_id,
                              backend_id=backend_id,
                              auth_data=auth_data,
+                             environment_id=infra_id,
                              )
         resolved_node.update(node_description)
         log.debug("Resolved node description:\n%s",
