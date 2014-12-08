@@ -141,7 +141,7 @@ class CreateNode(Command):
         log.debug('Performing CreateNode on node {\n%s}',
                   yaml.dump(node, default_flow_style=False))
         backend_id = node.get('backend_id', None)
-        infra_id = node['infra_id']
+        infra_id = node['environment_id']
         node_id = str(uuid.uuid4())
         infra_desc = self.ib.get('infrastructure.static_description', infra_id)
         auth_data = self.ib.get('backends.auth_data',
