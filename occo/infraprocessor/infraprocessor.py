@@ -137,17 +137,18 @@ class CreateNode(Command):
         Command.__init__(self)
         self.node = node
     def perform(self, infraprocessor):
+        ib = infraprocessor.ib
         node = self.node
         log.debug('Performing CreateNode on node {\n%s}',
                   yaml.dump(node, default_flow_style=False))
         backend_id = node.get('backend_id', None)
         infra_id = node['environment_id']
         node_id = str(uuid.uuid4())
-        infra_desc = self.ib.get('infrastructure.static_description', infra_id)
-        auth_data = self.ib.get('backends.auth_data',
-                                node['backend_id'],
-                                infra_desc['user_id'])
-        node_description = self.ib.get('node_definition', node['type'])
+        infra_desc = ib.get('infrastructure.static_description', infra_id)
+        auth_data = ib.get('backends.auth_data',
+                           node['backend_id'],
+                           infra_desc['user_id'])
+        node_description = ib.get('node_definition', node['type'])
 
         resolved_node = dict(id=node_id,
                              backend_id=backend_id,
