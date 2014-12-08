@@ -149,7 +149,7 @@ class CreateNode(Command):
                   yaml.dump(infra_desc, default_flow_style=False))
         auth_data = ib.get('backends.auth_data',
                            node['backend_id'],
-                           infra_desc['user_id'])
+                           infra_desc.user_id)
         node_description = ib.get('node_definition', node['type'])
 
         resolved_node = dict(id=node_id,
