@@ -13,6 +13,7 @@ import occo.util.communication as comm
 import time
 import threading
 import uuid
+import yaml
 
 log = logging.getLogger('occo.infraprocessor')
 
@@ -136,6 +137,8 @@ class CreateNode(Command):
         Command.__init__(self)
         self.node = node
     def perform(self, infraprocessor):
+        log.debug('Performing CreateNode on node {\n%s}',
+                  yaml.dump(node, default_flow_style=False))
         backend_id = node.get('backend_id', None)
         infra_id = node['infra_id']
         node_id = str(uuid.uuid4())
@@ -150,6 +153,8 @@ class CreateNode(Command):
                              auth_data=auth_data,
                              )
         resolved_node.update(node_description)
+        log.debug("Resolved node description:\n%s",
+                  yaml.dumps(resolved_node, default_flow_style=False))
 
         infraprocessor.servicecomposer.register_node(resolved_node)
         instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
