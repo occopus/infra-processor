@@ -153,6 +153,7 @@ class CreateNode(Command):
         node_description = ib.get('node_definition', node['type'])
 
         resolved_node = dict(id=node_id,
+                             name=node['name'],
                              backend_id=backend_id,
                              auth_data=auth_data,
                              environment_id=infra_id,
