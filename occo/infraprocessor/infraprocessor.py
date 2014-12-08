@@ -137,6 +137,7 @@ class CreateNode(Command):
         Command.__init__(self)
         self.node = node
     def perform(self, infraprocessor):
+        node = self.node
         log.debug('Performing CreateNode on node {\n%s}',
                   yaml.dump(node, default_flow_style=False))
         backend_id = node.get('backend_id', None)
