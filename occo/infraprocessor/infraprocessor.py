@@ -165,7 +165,7 @@ class CreateNode(Command):
         infraprocessor.servicecomposer.register_node(resolved_node)
         instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
 
-        self.uds.register_started_node(infra_id, node_id, instance_id)
+        infraprocessor.uds.register_started_node(infra_id, node_id, instance_id)
 
 class DropNode(Command):
     def __init__(self, node_id):
@@ -186,12 +186,14 @@ class DropEnvironment(Command):
 ## IP implementation
 
 class InfraProcessor(AbstractInfraProcessor):
-    def __init__(self, infobroker, cloudhandler, servicecomposer,
+    def __init__(self, infobroker, user_data_store,
+                 cloudhandler, servicecomposer,
                  process_strategy=SequentialStrategy(),
                  **config):
         super(InfraProcessor, self).__init__(process_strategy=process_strategy)
         self.__dict__.update(config)
         self.ib = infobroker
+        self.uds = user_data_store
         self.cloudhandler = cloudhandler
         self.servicecomposer = servicecomposer
 
