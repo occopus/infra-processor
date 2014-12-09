@@ -136,30 +136,45 @@ class CreateNode(Command):
     def __init__(self, node):
         Command.__init__(self)
         self.node = node
+    def resolve_node(self, node_id, node_description):
+        # Use `node' for short
+        node = node_description
+        # Generic information on the node
+        infra_id = node['environment_id']
+        # TODO (1) Only used for userid: compiler should denormalize this
+        #      information into the node object.
+        infra_desc = ib.get('infrastructure.static_description', infra_id)
+        log.debug('Resolved infrastructure description:\n%s',
+                  yaml.dump(infra_desc, default_flow_style=False))
+
+        # Resolve node definition
+        resolved_node = ib.get('node_definition', node['type'])
+
+        # Amend resolved node with basic information
+        # Also, override the stored, default backend_id, iff specified by the
+        # user.
+        resolved_node.update(id=node_id,
+                             name=node['name'],
+                             environment_id=infra_id,
+                             backend_id=node.get('backend_id',
+                                                 resolved_node['backend_id']),
+                             )
+
+        # Resolve backend-specific authentication information
+        resolved_node['auth_data'] = ib.get('backends.auth_data',
+                                            resolved_node['backend_id'],
+                                            # TODO (1)
+                                            infra_desc.user_id)
+
+        return resolved_node
     def perform(self, infraprocessor):
         ib = infraprocessor.ib
         node = self.node
         log.debug('Performing CreateNode on node {\n%s}',
                   yaml.dump(node, default_flow_style=False))
-        backend_id = node.get('backend_id', None)
-        infra_id = node['environment_id']
-        node_name = node['name']
-        node_id = str(uuid.uuid4())
-        infra_desc = ib.get('infrastructure.static_description', infra_id)
-        log.debug('Resolved infrastructure description:\n%s',
-                  yaml.dump(infra_desc, default_flow_style=False))
-        auth_data = ib.get('backends.auth_data',
-                           node['backend_id'],
-                           infra_desc.user_id)
-        node_description = ib.get('node_definition', node['type'])
 
-        resolved_node = dict(id=node_id,
-                             name=node_name,
-                             backend_id=backend_id,
-                             auth_data=auth_data,
-                             environment_id=infra_id,
-                             )
-        resolved_node.update(node_description)
+        node_id = str(uuid.uuid4())
+        resolved_node = self.resolve_node(node_id, node)
         log.debug("Resolved node description:\n%s",
                   yaml.dump(resolved_node, default_flow_style=False))
 
