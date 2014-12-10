@@ -13,6 +13,7 @@ import occo.util.communication as comm
 import time
 import threading
 import uuid
+import yaml
 
 log = logging.getLogger('occo.infraprocessor')
 
@@ -129,17 +130,55 @@ class CreateEnvironment(Command):
         Command.__init__(self)
         self.environment_id = environment_id
     def perform(self, infraprocessor):
-        infraprocessor.servicecomposer.create_environment(
-            self.environment_id)
+        infraprocessor.servicecomposer.create_environment(self.environment_id)
 
 class CreateNode(Command):
     def __init__(self, node):
         Command.__init__(self)
         self.node = node
+    def resolve_node(self, ib, node_id, node_description):
+        # Use `node' for short
+        node = node_description
+
+        # Resolve node definition
+        resolved_node = ib.get('node.definition',
+                               node['type'], node.get('backend_id'))
+        # TODO: Alternative, future version:
+        # resolved_node = brokering_service.select_implementation(
+        #                                node['type'], node.get('backend_id'))
+        # The brokering servie will call ib.get() as necessary.
+
+        # Amend resolved node with basic information
+        resolved_node['id'] = node_id
+        resolved_node['name'] = node['name']
+        resolved_node['environment_id'] = node['environment_id']
+        # Resolve backend-specific authentication information
+        resolved_node['auth_data'] = ib.get('backends.auth_data',
+                                            resolved_node['backend_id'],
+                                            node['user_id'])
+
+        return resolved_node
     def perform(self, infraprocessor):
-        self.node['id'] = str(uuid.uuid4())
-        infraprocessor.servicecomposer.register_node(self.node)
-        infraprocessor.cloudhandler.create_node(self.node)
+        ib = infraprocessor.ib
+        node = self.node
+        log.debug('Performing CreateNode on node {\n%s}',
+                  yaml.dump(node, default_flow_style=False))
+
+        node_id = str(uuid.uuid4())
+        resolved_node = self.resolve_node(ib, node_id, node)
+        log.debug("Resolved node description:\n%s",
+                  yaml.dump(resolved_node, default_flow_style=False))
+
+        infraprocessor.servicecomposer.register_node(resolved_node)
+        instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
+
+        instance_data = dict(node_id=node_id,
+                             backend_id=resolved_node['backend_id'],
+                             user_id=node['user_id'],
+                             instance_id=instance_id)
+
+        infraprocessor.uds.register_started_node(
+            node['environment_id'], node['name'], instance_data)
 
 class DropNode(Command):
     def __init__(self, node_id):
@@ -160,10 +199,14 @@ class DropEnvironment(Command):
 ## IP implementation
 
 class InfraProcessor(AbstractInfraProcessor):
-    def __init__(self, infobroker, cloudhandler, servicecomposer,
-                 process_strategy=SequentialStrategy()):
+    def __init__(self, infobroker, user_data_store,
+                 cloudhandler, servicecomposer,
+                 process_strategy=SequentialStrategy(),
+                 **config):
         super(InfraProcessor, self).__init__(process_strategy=process_strategy)
+        self.__dict__.update(config)
         self.ib = infobroker
+        self.uds = user_data_store
         self.cloudhandler = cloudhandler
         self.servicecomposer = servicecomposer
 
