@@ -139,32 +139,23 @@ class CreateNode(Command):
     def resolve_node(self, node_id, node_description):
         # Use `node' for short
         node = node_description
-        # Generic information on the node
-        infra_id = node['environment_id']
-        # TODO (1) Only used for userid: compiler should denormalize this
-        #      information into the node object.
-        infra_desc = ib.get('infrastructure.static_description', infra_id)
-        log.debug('Resolved infrastructure description:\n%s',
-                  yaml.dump(infra_desc, default_flow_style=False))
 
         # Resolve node definition
-        resolved_node = ib.get('node.definition', node['type'], node.get('backend_id'))
-        # TODO: Alternative version:
-        #       implementations = ib.get('node.definition.all', node['type'])
-        #       resolved_node = brokering_service.select_implementation(
-        #                                implementations, ...)
+        resolved_node = ib.get('node.definition',
+                               node['type'], node.get('backend_id'))
+        # TODO: Alternative, future version:
+        # resolved_node = brokering_service.select_implementation(
+        #                                node['type'], node.get('backend_id'))
+        # The brokering servie will call ib.get() as necessary.
 
         # Amend resolved node with basic information
-        # Also, override the stored, default backend_id, iff specified by the
-        # user.
         resolved_node['id'] = node_id
         resolved_node['name'] = node['name']
-        resolved_node['environment_id'] = infra_id
+        resolved_node['environment_id'] = node['environment_id']
         # Resolve backend-specific authentication information
         resolved_node['auth_data'] = ib.get('backends.auth_data',
                                             resolved_node['backend_id'],
-                                            # TODO (1)
-                                            infra_desc.user_id)
+                                            node['user_id'])
 
         return resolved_node
     def perform(self, infraprocessor):
