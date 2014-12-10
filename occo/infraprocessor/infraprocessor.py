@@ -136,7 +136,7 @@ class CreateNode(Command):
     def __init__(self, node):
         Command.__init__(self)
         self.node = node
-    def resolve_node(self, node_id, node_description):
+    def resolve_node(self, ib, node_id, node_description):
         # Use `node' for short
         node = node_description
 
@@ -165,7 +165,7 @@ class CreateNode(Command):
                   yaml.dump(node, default_flow_style=False))
 
         node_id = str(uuid.uuid4())
-        resolved_node = self.resolve_node(node_id, node)
+        resolved_node = self.resolve_node(ib, node_id, node)
         log.debug("Resolved node description:\n%s",
                   yaml.dump(resolved_node, default_flow_style=False))
 
