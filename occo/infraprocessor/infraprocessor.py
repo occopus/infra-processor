@@ -173,12 +173,12 @@ class CreateNode(Command):
         instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
 
         instance_data = dict(node_id=node_id,
-                             backend_id=backend_id,
-                             user_id=infra_desc.user_id,
+                             backend_id=resolved_node['backend_id'],
+                             user_id=node['user_id'],
                              instance_id=instance_id)
 
         infraprocessor.uds.register_started_node(
-            infra_id, node_name, instance_data)
+            node['environment_id'], node['name'], instance_data)
 
 class DropNode(Command):
     def __init__(self, node_id):
