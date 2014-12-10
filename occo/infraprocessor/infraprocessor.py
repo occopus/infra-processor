@@ -148,18 +148,18 @@ class CreateNode(Command):
                   yaml.dump(infra_desc, default_flow_style=False))
 
         # Resolve node definition
-        resolved_node = ib.get('node_definition', node['type'])
+        resolved_node = ib.get('node.definition', node['type'], node.get('backend_id'))
+        # TODO: Alternative version:
+        #       implementations = ib.get('node.definition.all', node['type'])
+        #       resolved_node = brokering_service.select_implementation(
+        #                                implementations, ...)
 
         # Amend resolved node with basic information
         # Also, override the stored, default backend_id, iff specified by the
         # user.
-        resolved_node.update(id=node_id,
-                             name=node['name'],
-                             environment_id=infra_id,
-                             backend_id=node.get('backend_id',
-                                                 resolved_node['backend_id']),
-                             )
-
+        resolved_node['id'] = node_id
+        resolved_node['name'] = node['name']
+        resolved_node['environment_id'] = infra_id
         # Resolve backend-specific authentication information
         resolved_node['auth_data'] = ib.get('backends.auth_data',
                                             resolved_node['backend_id'],
