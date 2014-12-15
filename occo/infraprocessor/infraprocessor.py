@@ -180,7 +180,15 @@ class CreateNode(Command):
         infraprocessor.uds.register_started_node(
             node['environment_id'], node['name'], instance_data)
 
-        # TODO synchronize on node state here
+        while True:
+            # TODO add timeout
+            status = ib.get('node.state', instance_data)
+            # TODO handle other statuses too (error, failure, etc.)
+            if status == 'running:ready':
+                break
+            log.debug("Node status: '%s'; waiting...", status)
+            time.sleep(infraprocessor.poll_delay)
+        log.debug("Node '%s' started; proceeding", node_id)
 
 class DropNode(Command):
     def __init__(self, instance_data):
@@ -204,6 +212,7 @@ class InfraProcessor(AbstractInfraProcessor):
     def __init__(self, infobroker, user_data_store,
                  cloudhandler, servicecomposer,
                  process_strategy=SequentialStrategy(),
+                 poll_delay=10,
                  **config):
         super(InfraProcessor, self).__init__(process_strategy=process_strategy)
         self.__dict__.update(config)
@@ -211,6 +220,7 @@ class InfraProcessor(AbstractInfraProcessor):
         self.uds = user_data_store
         self.cloudhandler = cloudhandler
         self.servicecomposer = servicecomposer
+        self.poll_delay = poll_delay
 
     def cri_create_env(self, environment_id):
         return CreateEnvironment(environment_id)
