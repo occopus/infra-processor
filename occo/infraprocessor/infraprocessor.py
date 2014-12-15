@@ -180,13 +180,15 @@ class CreateNode(Command):
         infraprocessor.uds.register_started_node(
             node['environment_id'], node['name'], instance_data)
 
+        # TODO synchronize on node state here
+
 class DropNode(Command):
-    def __init__(self, node_id):
+    def __init__(self, instance_data):
         Command.__init__(self)
-        self.node_id = node_id
+        self.instance_data = instance_data
     def perform(self, infraprocessor):
-        infraprocessor.cloudhandler.drop_node(self.node_id)
-        infraprocessor.servicecomposer.drop_node(self.node_id)
+        infraprocessor.cloudhandler.drop_node(self.instance_data)
+        infraprocessor.servicecomposer.drop_node(self.instance_data)
 
 class DropEnvironment(Command):
     def __init__(self, environment_id):
