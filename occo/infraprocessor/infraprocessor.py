@@ -50,7 +50,7 @@ class PerformThread(threading.Thread):
     def run(self):
         try:
             self.instruction.perform(self.infraprocessor)
-        except (Exception, KeyboardInterrupt):
+        except BaseException:
             log.exception("Unhandled exception in thread:")
 class ParallelProcessesStrategy(Strategy):
     def perform(self, infraprocessor, instruction_list):
