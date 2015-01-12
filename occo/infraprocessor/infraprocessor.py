@@ -10,6 +10,7 @@ __all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton', 'InfraProcess
 import logging
 import occo.util as util
 import occo.util.communication as comm
+from node_resolution import resolve_node
 import time
 import threading
 import uuid
@@ -136,28 +137,7 @@ class CreateNode(Command):
     def __init__(self, node):
         Command.__init__(self)
         self.node = node
-    def resolve_node(self, ib, node_id, node_description):
-        # Use `node' for short
-        node = node_description
 
-        # Resolve node definition
-        resolved_node = ib.get('node.definition',
-                               node['type'], node.get('backend_id'))
-        # TODO: Alternative, future version:
-        # resolved_node = brokering_service.select_implementation(
-        #                                node['type'], node.get('backend_id'))
-        # The brokering servie will call ib.get() as necessary.
-
-        # Amend resolved node with basic information
-        resolved_node['id'] = node_id
-        resolved_node['name'] = node['name']
-        resolved_node['environment_id'] = node['environment_id']
-        # Resolve backend-specific authentication information
-        resolved_node['auth_data'] = ib.get('backends.auth_data',
-                                            resolved_node['backend_id'],
-                                            node['user_id'])
-
-        return resolved_node
     def perform(self, infraprocessor):
         ib = infraprocessor.ib
         node = self.node
@@ -165,7 +145,7 @@ class CreateNode(Command):
                   yaml.dump(node, default_flow_style=False))
 
         node_id = str(uuid.uuid4())
-        resolved_node = self.resolve_node(ib, node_id, node)
+        resolved_node = resolve_node(ib, node_id, node)
         log.debug("Resolved node description:\n%s",
                   yaml.dump(resolved_node, default_flow_style=False))
 
