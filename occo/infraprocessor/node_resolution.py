@@ -7,8 +7,9 @@ __all__ = ['resolve_node']
 import logging
 import occo.util as util
 import occo.util.factory as factory
+import yaml
 
-log = logging.getLogger('occo.infraprocessor')
+log = logging.getLogger('occo.infraprocessor.node_resolution')
 
 def resolve_node(ib, node_id, node_description):
     resolver = Resolver(node_description['implementation_type'],
