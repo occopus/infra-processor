@@ -37,6 +37,8 @@ class Resolver(factory.MultiBackend):
         In a sub-class, node_definition should be updated in-place with
         the necessary information.
         node_definition is also returned for convenience.
+        The resulting node definition must contain all information intended for
+        both the service composer and the cloud handler.
         """
         return node_definition
 
