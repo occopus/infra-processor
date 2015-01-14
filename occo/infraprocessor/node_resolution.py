@@ -8,6 +8,7 @@ import logging
 import occo.util as util
 import occo.util.factory as factory
 import yaml
+import jinja2
 
 log = logging.getLogger('occo.infraprocessor.node_resolution')
 
@@ -50,6 +51,10 @@ class ChefCloudinitResolver(Resolver):
         ib = self.info_broker
         node_id = self.node_id
 
+        sc_data = ib.get('service_composer.aux_data',
+                         node['service_composer_id'])
+        template = jinja2.Template(sc_data['context_template'])
+
         # Amend resolved node with basic information
         node_definition['id'] = node_id
         node_definition['name'] = node['name']
@@ -58,4 +63,5 @@ class ChefCloudinitResolver(Resolver):
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
                                               node['user_id'])
+        node_definition['context'] = template.render(**node_definition)
         return node_definition
