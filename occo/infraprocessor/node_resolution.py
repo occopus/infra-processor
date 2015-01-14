@@ -52,7 +52,7 @@ class ChefCloudinitResolver(Resolver):
         node_id = self.node_id
 
         sc_data = ib.get('service_composer.aux_data',
-                         node['service_composer_id'])
+                         node_definition['service_composer_id'])
         template = jinja2.Template(sc_data['context_template'])
 
         # Amend resolved node with basic information
