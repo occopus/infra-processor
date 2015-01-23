@@ -2,7 +2,18 @@
 # Copyright (C) 2014 MTA SZTAKI
 #
 
-__all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton', 'InfraProcessor',
+""" Infrastructure Processor for OCCO
+
+.. moduleauthor:: Adam Visegradi <adam.visegradi@sztaki.mta.hu>
+
+.. autoclass:: AbstractInfraProcessor
+    :members:
+.. autoclass:: Command
+    :members:
+"""
+
+__all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton',
+           'InfraProcessor',
            'Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy',
            'CreateEnvironment', 'CreateNode', 'DropNode', 'DropEnvironment',
            'Mgmt_SkipUntil']
@@ -23,20 +34,44 @@ log = logging.getLogger('occo.infraprocessor')
 ###
 
 class Strategy(object):
+    """
+    Abstract strategy for processing a batch of *independent* commands.
+
+    :var cancel_event: When supported by an implementation of the strategy,
+        this event can be used to abort processing the batch.
+    :type cancel_event: :class:`threading.Event`
+    """
     def __init__(self):
         self.cancel_event = threading.Event()
 
     @property
     def cancelled(self):
+        """ Returns :data:`True` iff performing the batch should be aborted."""
         return self.cancel_event.is_set()
     def cancel_pending(self):
-        # Where applicable
+        """
+        Registers that performing the batch should be aborted. It only works
+        iff the implementation of the strategy supports it (e.g. a thread pool
+        or a sequential iteration can be aborted).
+        """
         self.cancel_event.set()
 
     def perform(self, infraprocessor, instruction_list):
+        """
+        Perform the instruction list.
+
+        This method must be overridden in the implementations of the strategy.
+
+        :param infraprocessor: The infraprocessor that calls this method.
+            Commands are perfomed *on* an infrastructure processor, therefore
+            they need a reference to it.
+        :param instruction_list: An iterable containing the commands to be
+            performed.
+        """
         raise NotImplementedError()
 
 class SequentialStrategy(Strategy):
+    """Implements :class:`Strategy`, performing the commands sequentially."""
     def perform(self, infraprocessor, instruction_list):
         for i in instruction_list:
             if self.cancelled:
@@ -44,6 +79,14 @@ class SequentialStrategy(Strategy):
             i.perform(infraprocessor)
 
 class PerformThread(threading.Thread):
+    """
+    Thread object used by :class:`ParallelProcessesStrategy` to perform a
+    single command.
+
+    .. todo:: Why did I call it Parallel*Processes* when it used threads?!
+    .. todo:: Should implement a parallel strategy that uses actual processes.
+        These would be abortable.
+    """
     def __init__(self, infraprocessor, instruction):
         super(PerformThread, self).__init__()
         self.infraprocessor = infraprocessor
@@ -53,19 +96,30 @@ class PerformThread(threading.Thread):
             self.instruction.perform(self.infraprocessor)
         except BaseException:
             log.exception("Unhandled exception in thread:")
+
 class ParallelProcessesStrategy(Strategy):
+    """
+    Implements :class:`Strategy`, performing the commands in a parallel manner.
+    """
     def perform(self, infraprocessor, instruction_list):
         threads = [PerformThread(infraprocessor, i) for i in instruction_list]
+        # Start all threads
         for t in threads:
             log.debug('Starting thread for %r', t.instruction)
             t.start()
             log.debug('STARTED Thread for %r', t.instruction)
+        # Wait for threads to finish
         for t in threads:
             log.debug('Joining thread for %r', t.instruction)
             t.join()
             log.debug('FINISHED Thread for %r', t.instruction)
 
 class RemotePushStrategy(Strategy):
+    """
+    Implements :class:`Strategy` by simply pushing the instruction list to
+    another infrastructure processor. I.e.: to the "real" infrastructure
+    processor.
+    """
     def __init__(self, destination_queue):
         super(RemotePushStrategy, self).__init__()
         self.queue = destination_queue
@@ -82,44 +136,116 @@ class RemotePushStrategy(Strategy):
 
 
 class Command(object):
+    """
+    Abstract definition of a command.
+
+    If they override it, sub-classes must the call ``Command``'s constructor
+    to ensure ``timestamp`` is set. This is important because the timestamp is
+    used to clear the infrastructure processor queue.
+    See: :meth:`AbstractInfraProcessor.cancel_pending`.
+
+    :var timestamp: The time of creating the command.
+    """
     def __init__(self):
         self.timestamp = time.time()
     def perform(self, infraprocessor):
+        """Perform the algorithm represented by this command."""
         raise NotImplementedError()
 
 class AbstractInfraProcessor(object):
+    """
+    Abstract definition of the Infrastructure Processor.
+
+    Instead of providing *methods* as primitives, this class implements the
+    `Command design pattern`_: primitives are provided as self-contained
+    (algorithm + input data) :class:`Command` objects. This way performing
+    functions can be 1) batched and 2) delivered through communication
+    channels. These primitives can be created with the ``cri_*`` methods.
+
+    :param process_strategy: The strategy used to perform an internally
+        independent set of commands.
+    :type process_strategy: :class:`Strategy`
+
+    .. _`Command design pattern`: http://en.wikipedia.org/wiki/Command_pattern
+
+    .. automethod:: __enter__
+    """
     def __init__(self, process_strategy):
         self.strategy = process_strategy
         self.cancelled_until = 0
 
     def __enter__(self):
+        """
+        This can be overridden in a sub-class if necessary.
+
+        .. todo:: This is quite ugly. An Infra Processor doesn't need context
+            management per se. This is here because of the remote skeleton, and
+            the queues it uses. These queues need this. However, this shouldn't
+            affect the infrastructure processor; instead, the queues should be
+            initialized in the start_consuming or similar method, as late as
+            possible, and invisible to the client. It would be very nice to
+            factor this out.
+        """
         return self
     def __exit__(self, type, value, tb):
         pass
 
     def _not_cancelled(self, instruction):
+        """
+        Decides whether a command has to be considered cancelled; i.e. it
+        has arrived after the deadline registered by :meth:`cancel_pending`.
+
+        Negating the function's meaning and its name has spared a lambda
+        declaration in :meth:`push_instructions` improving readability.
+        """
         return instruction.timestamp > self.cancelled_until
 
     def push_instructions(self, instructions):
-        # Make `instructions' iterable if necessary
+        """
+        Performs the given list of independent instructions according to the
+        strategy.
+
+        :param instructions: The list of instructions. For convenienve, a
+            single instruction can be specified by itself, without enclosing it
+            in an iterable.
+        :type instructions: An iterable or a single :class:`Command`.
+        """
+        # If a single Command object has been specified, convert it to an
+        # iterable. This way, the client code can remain more simple if a
+        # single command has to be specified; while the strategy can perform
+        # `instructions` uniformly as an iterable.
         instruction_list = \
             instructions if hasattr(instructions, '__iter__') \
             else (instructions,)
+        # TODO Reseting the event should probably be done by the strategy.
         self.strategy.cancel_event.clear()
+        # Don't bother with commands known to be already cancelled.
         filtered_list = list(filter(self._not_cancelled, instruction_list))
         log.debug('Filtered list: %r', filtered_list)
         self.strategy.perform(self, filtered_list)
 
     def cri_create_env(self, environment_id):
+        """ Create a primitive that will create an infrastructure instance. """
         raise NotImplementedError()
     def cri_create_node(self, node):
+        """ Create a primitive that will create an node instance. """
         raise NotImplementedError()
     def cri_drop_node(self, node_id):
+        """ Create a primitive that will delete a node instane. """
         raise NotImplementedError()
     def cri_drop_environment(self, environment_id):
+        """ Create a primitive that will delete an infrastructure instance. """
         raise NotImplementedError()
 
     def cancel_pending(self, deadline):
+        """
+        Registers that commands up to a specific time should be considered
+        cancelled.
+
+        :param deadline: The strategy will try to cancel/abort/ignore
+            performing the commands that has been created before this time.
+        :type deadline: :class:`int`, unix timestamp
+        """
         self.cancelled_until = deadline
         self.strategy.cancel_pending()
 
@@ -127,6 +253,16 @@ class AbstractInfraProcessor(object):
 ## IP Commands
 
 class CreateEnvironment(Command):
+    """
+    Implementation of infrastructure creation using a
+    :ref:`service composer <servicecomposer>`.
+
+    :param str environment_id: The identifier of the infrastructure instance.
+
+    The ``environment_id`` is a unique identifier pre-generated by the
+    :ref:`Compiler <compiler>`. The infrastructure will be instantiated with
+    this identifier.
+    """
     def __init__(self, environment_id):
         Command.__init__(self)
         self.environment_id = environment_id
@@ -134,32 +270,72 @@ class CreateEnvironment(Command):
         infraprocessor.servicecomposer.create_environment(self.environment_id)
 
 class CreateNode(Command):
+    """
+    Implementation of node creation using a
+    :ref:`service composer <servicecomposer>` and a
+    :ref:`cloud handler <cloudhandler>`.
+
+    :param node: The description of the node to be created.
+    :type node: :ref:`nodedescription`
+
+    """
     def __init__(self, node):
         Command.__init__(self)
         self.node = node
 
     def perform(self, infraprocessor):
+        """
+        Start the node.
+
+        This implementation is **incomplete**. We need to:
+
+        .. todo:: Handle errors when creating the node (if necessary; it is
+            possible that they are best handled in the InfraProcessor itself).
+
+        .. warning:: Does the parallelized strategy propagate errors
+            properly? Must verify!
+
+        .. todo::
+            Handle all known possible statuses
+
+        .. todo:: We synchronize on the node becoming completely ready
+            (started, configured). We need a **timeout** on this.
+
+        """
+
+        # Quick-access references
         ib = infraprocessor.ib
         node = self.node
+
         log.debug('Performing CreateNode on node {\n%s}',
                   yaml.dump(node, default_flow_style=False))
 
+        # Internal identifier of the node instance
         node_id = str(uuid.uuid4())
+        # Resolve all the information required to instantiate the node using
+        # the abstract description and the UDS/infobroker
         resolved_node = resolve_node(ib, node_id, node)
         log.debug("Resolved node description:\n%s",
                   yaml.dump(resolved_node, default_flow_style=False))
 
+        # Create the node based on the resolved information
         infraprocessor.servicecomposer.register_node(resolved_node)
         instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
 
+        # Information specifying a running node instance
+        # See: :ref:`instancedata`.
         instance_data = dict(node_id=node_id,
                              backend_id=resolved_node['backend_id'],
                              user_id=node['user_id'],
                              instance_id=instance_id)
 
+        # Although all information can be extraced from the system dynamically,
+        # we keep an internal record on the state of the infrastructure for
+        # time efficiency.
         infraprocessor.uds.register_started_node(
             node['environment_id'], node['name'], instance_data)
 
+        # Wait for the node to start
         while True:
             # TODO add timeout
             status = ib.get('node.state', instance_data)
@@ -171,6 +347,15 @@ class CreateNode(Command):
         log.debug("Node '%s' started; proceeding", node_id)
 
 class DropNode(Command):
+    """
+    Implementation of node deletion using a
+    :ref:`service composer <servicecomposer>` and a
+    :ref:`cloud handler <cloudhandler>`.
+
+    :param instance_data: The description of the node instance to be deleted.
+    :type instance_data: :ref:`instancedata`
+
+    """
     def __init__(self, instance_data):
         Command.__init__(self)
         self.instance_data = instance_data
@@ -179,6 +364,12 @@ class DropNode(Command):
         infraprocessor.servicecomposer.drop_node(self.instance_data)
 
 class DropEnvironment(Command):
+    """
+    Implementation of infrastructure deletion using a
+    :ref:`service composer <servicecomposer>`.
+
+    :param str environment_id: The identifier of the infrastructure instance.
+    """
     def __init__(self, environment_id):
         Command.__init__(self)
         self.environment_id = environment_id
