@@ -16,8 +16,7 @@ class Stuff(): pass
 class BaseTest(unittest.TestCase):
     def setUp(self):
         self.ib = DummyInfoBroker()
-        self.uds_backend = KeyValueStore(protocol='dict')
-        self.uds = UDS(kvstore=self.uds_backend)
+        self.uds = UDS(protocol='dict', info_broker=self.ib)
         self.sc = DummyServiceComposer(self.ib)
         self.ch = DummyCloudHandler(self.ib)
     def test_cmd_1(self):
