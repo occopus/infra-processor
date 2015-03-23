@@ -26,6 +26,7 @@ __all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton',
 import logging
 import occo.util as util
 import occo.util.communication as comm
+import occo.util.factory as factory
 from node_resolution import resolve_node
 import time
 import threading
@@ -168,7 +169,7 @@ class Command(object):
         """Perform the algorithm represented by this command."""
         raise NotImplementedError()
 
-class AbstractInfraProcessor(object):
+class AbstractInfraProcessor(factory.MultiBackend):
     """
     Abstract definition of the Infrastructure Processor.
 
@@ -398,6 +399,7 @@ class DropEnvironment(Command):
 ####################
 ## IP implementation
 
+@factory.register(AbstractInfraProcessor, 'basic')
 class InfraProcessor(AbstractInfraProcessor):
     """
     Implementation of :class:`AbstractInfraProcessor` using the primitives
