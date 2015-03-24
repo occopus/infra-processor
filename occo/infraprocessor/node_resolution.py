@@ -140,3 +140,16 @@ class ChefCloudinitResolver(Resolver):
                                               node['user_id'])
         node_definition['context'] = template.render(**node_definition)
         return node_definition
+
+@factory.register(Resolver, 'cooked')
+class ChefCloudinitResolver(Resolver):
+    """
+    Implementation of :class:`Resolver` for implementations already resolved.
+
+    This resolver returns the node_definition as-is.
+    """
+    def resolve_node(self, node_definition):
+        """
+        Implementation of :meth:`Resolver.resolve_node`.
+        """
+        return node_definition
