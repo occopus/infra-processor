@@ -481,6 +481,7 @@ class Mgmt_SkipUntil(Command):
     def perform(self, infraprocessor):
         infraprocessor.cancel_upcoming(self.deadline)
 
+@factory.register(AbstractInfraProcessor, 'remote')
 class RemoteInfraProcessor(InfraProcessor):
     """
     A remote implementation of :class:`InfraProcessor`.
