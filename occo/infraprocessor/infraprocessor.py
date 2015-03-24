@@ -6,8 +6,6 @@
 
 .. moduleauthor:: Adam Visegradi <adam.visegradi@sztaki.mta.hu>
 
-.. autoclass:: AbstractInfraProcessor
-    :members:
 .. autoclass:: Command
     :members:
 
@@ -17,8 +15,9 @@
         :members:
 """
 
-__all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton',
-           'InfraProcessor',
+__all__ = ['InfraProcessor',
+           'RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton',
+           'BasicInfraProcessor',
            'Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy',
            'CreateEnvironment', 'CreateNode', 'DropNode', 'DropEnvironment',
            'Mgmt_SkipUntil']
@@ -160,7 +159,7 @@ class Command(object):
     If they override it, sub-classes must the call ``Command``'s constructor
     to ensure ``timestamp`` is set. This is important because the timestamp is
     used to clear the infrastructure processor queue.
-    See: :meth:`AbstractInfraProcessor.cancel_pending`.
+    See: :meth:`InfraProcessor.cancel_pending`.
 
     :var timestamp: The time of creating the command.
     """
@@ -170,7 +169,7 @@ class Command(object):
         """Perform the algorithm represented by this command."""
         raise NotImplementedError()
 
-class AbstractInfraProcessor(factory.MultiBackend):
+class InfraProcessor(factory.MultiBackend):
     """
     Abstract definition of the Infrastructure Processor.
 
@@ -400,11 +399,11 @@ class DropEnvironment(Command):
 ####################
 ## IP implementation
 
-@factory.register(AbstractInfraProcessor, 'basic')
-class InfraProcessor(AbstractInfraProcessor):
+@factory.register(InfraProcessor, 'basic')
+class BasicInfraProcessor(InfraProcessor):
     """
-    Implementation of :class:`AbstractInfraProcessor` using the primitives
-    defined in this module.
+    Implementation of :class:`InfraProcessor` using the primitives defined in
+    this module.
 
     :param user_data_store: Database manipulation.
     :type user_data_store: :class:`~occo.infobroker.UDS`
@@ -430,7 +429,8 @@ class InfraProcessor(AbstractInfraProcessor):
                  process_strategy=SequentialStrategy(),
                  poll_delay=10,
                  **config):
-        super(InfraProcessor, self).__init__(process_strategy=process_strategy)
+        super(BasicInfraProcessor, self) \
+            .__init__(process_strategy=process_strategy)
         self.__dict__.update(config)
         self.ib = ib.main_info_broker
         self.uds = user_data_store
@@ -481,13 +481,13 @@ class Mgmt_SkipUntil(Command):
     def perform(self, infraprocessor):
         infraprocessor.cancel_upcoming(self.deadline)
 
-@factory.register(AbstractInfraProcessor, 'remote')
-class RemoteInfraProcessor(InfraProcessor):
+@factory.register(InfraProcessor, 'remote')
+class RemoteInfraProcessor(BasicInfraProcessor):
     """
     A remote implementation of :class:`InfraProcessor`.
 
     The exact same command objects are created by this class as that by the
-    :class:`InfraProcessor`. The difference is that this class uses the
+    :class:`BasicInfraProcessor`. The difference is that this class uses the
     :class:`RemotePushStrategy` to perform instructions.
 
     This class communicates with a :class:`RemoteInfraProcessorSkeleton`
@@ -497,16 +497,16 @@ class RemoteInfraProcessor(InfraProcessor):
         communication channel.
 
     .. todo:: Rethink queue context management.
-        See :meth:`AbstractInfraProcessor.__enter__`.
+        See :meth:`InfraProcessor.__enter__`.
     """
     def __init__(self, destination_queue_cfg):
-        # Calling only the AbstractIP's __init__
-        # (and skipping InfraProcessor.__init__) is intentional:
+        # Calling only the abstract IP's __init__
+        # (and skipping BasicInfraProcessor.__init__) is intentional:
         #
-        # Command classes must be inherited (hence the InfraProcessor parent),
-        # but this class does not need the IP's backends (infobroker,
+        # Command classes must be inherited (hence the BasicInfraProcessor
+        # parent), but this class does not need the IP's backends (infobroker,
         # cloudhandler, etc.)
-        AbstractInfraProcessor.__init__(
+        InfraProcessor.__init__(
             self, process_strategy=RemotePushStrategy(
                     comm.AsynchronProducer(**destination_queue_cfg)))
 
@@ -518,7 +518,7 @@ class RemoteInfraProcessor(InfraProcessor):
 
     def cancel_pending(self, deadline):
         """
-        Implementation of :meth:`AbstractInfraProcessor.cancel_pending` with
+        Implementation of :meth:`InfraProcessor.cancel_pending` with
         :class:`Mgmt_SkipUntil`.
         """
         self.push_instructions([Mgmt_SkipUntil(deadline)])
@@ -535,7 +535,7 @@ class RemoteInfraProcessorSkeleton(object):
     :param backend_ip: The "real" *I*\ nfrastructure *P*\ rocessor (hence
         ``_ip``).  Actually, this may be another :class:`RemoteInfraProcessor`
         if necessary for some twisted reason...
-    :type backend_ip: :class:`AbstractInfraProcessor`
+    :type backend_ip: :class:`InfraProcessor`
 
     :param ip_queue_cfg: Configuration intended for the backend
         :class:`~occo.util.communication.comm.EventDrivenConsumer` for the
