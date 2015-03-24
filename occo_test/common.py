@@ -40,7 +40,7 @@ class DummyInfoBroker(object):
         ib.main_info_broker = self
         self.environments = dict()
         self.node_lookup = dict()
-    def get(key):
+    def get(self, key, *args, **kwargs):
         pass
     def __repr__(self):
         log.info('%r', self.environments)
