@@ -7,17 +7,19 @@
 import unittest
 from common import *
 import occo.infraprocessor as ip
+import occo.util as util
 import threading as th
 import time
 
 class BaseTest(unittest.TestCase):
     def setUp(self):
         self.ib = DummyInfoBroker()
+        util.set_main_info_broker(self.ib)
         self.sc = DummyServiceComposer(self.ib)
         self.ch = DummyCloudHandler(self.ib)
     def test_create_environment(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
+        infrap = ip.InfraProcessor(self.ch, self.sc)
         skeleton = ip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
         stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
@@ -39,7 +41,7 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
     def test_create_node(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
+        infrap = ip.InfraProcessor(self.ch, self.sc)
         skeleton = ip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
         stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
@@ -64,7 +66,7 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node.id))
     def test_drop_node(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
+        infrap = ip.InfraProcessor(self.ch, self.sc)
         skeleton = ip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
         stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
@@ -91,7 +93,7 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
     def test_drop_environment(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
+        infrap = ip.InfraProcessor(self.ch, self.sc)
         skeleton = ip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
         stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
@@ -120,7 +122,7 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(self.ib), '')
     def test_create_multiple_nodes(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ib, self.ch, self.sc)
+        infrap = ip.InfraProcessor(self.ch, self.sc)
         skeleton = ip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
         stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
