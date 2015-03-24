@@ -27,6 +27,7 @@ import logging
 import occo.util as util
 import occo.util.communication as comm
 import occo.util.factory as factory
+import occo.infobroker as ib
 from node_resolution import resolve_node
 import time
 import threading
@@ -405,9 +406,6 @@ class InfraProcessor(AbstractInfraProcessor):
     Implementation of :class:`AbstractInfraProcessor` using the primitives
     defined in this module.
 
-    :param infobroker: Information source.
-    :type infobroker: :class:`~occo.infobroker.provider.InfoProvider`
-
     :param user_data_store: Database manipulation.
     :type user_data_store: :class:`~occo.infobroker.UDS`
 
@@ -427,14 +425,14 @@ class InfraProcessor(AbstractInfraProcessor):
         :meth:`CreateNode.perform`. ``poll_delay`` is the number of seconds to
         wait between polls.
     """
-    def __init__(self, infobroker, user_data_store,
+    def __init__(self, user_data_store,
                  cloudhandler, servicecomposer,
                  process_strategy=SequentialStrategy(),
                  poll_delay=10,
                  **config):
         super(InfraProcessor, self).__init__(process_strategy=process_strategy)
         self.__dict__.update(config)
-        self.ib = infobroker
+        self.ib = ib.main_info_broker
         self.uds = user_data_store
         self.cloudhandler = cloudhandler
         self.servicecomposer = servicecomposer
