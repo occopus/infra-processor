@@ -20,6 +20,12 @@ import uuid
 def uid():
     return str(uuid.uuid4())
 
+dummydata = {
+    'node.definition' : {
+        'implementation_type' : 'cooked'
+    }
+}
+
 class DummyNode(dict):
     def __init__(self, environment_id):
         self['environment_id'] = environment_id
@@ -41,7 +47,7 @@ class DummyInfoBroker(object):
         self.environments = dict()
         self.node_lookup = dict()
     def get(self, key, *args, **kwargs):
-        pass
+        return dummydata[key]
     def __repr__(self):
         log.info('%r', self.environments)
         nodelist_repr = lambda nodelist: ', '.join(repr(n) for n in nodelist)
