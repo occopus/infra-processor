@@ -12,8 +12,7 @@ import threading
 
 class BaseTest(unittest.TestCase):
     def setUp(self):
-        self.ib = DummyInfoBroker()
-        util.set_main_info_broker(self.ib)
+        self.ib = DummyInfoBroker(main_info_broker=True)
         self.sc = DummyServiceComposer(self.ib)
         self.ch = DummyCloudHandler(self.ib)
     def test_create_environment(self):

@@ -34,7 +34,9 @@ class DummyNode(object):
         return '%s_%r'%(self.id, self.started)
 
 class DummyInfoBroker(object):
-    def __init__(self):
+    def __init__(self, main_info_broker=False):
+        import occo.infobroker as ib
+        ib.main_info_broker = self
         self.environments = dict()
         self.node_lookup = dict()
     def get(key):
