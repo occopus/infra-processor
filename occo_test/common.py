@@ -20,13 +20,14 @@ import uuid
 def uid():
     return str(uuid.uuid4())
 
-class DummyNode(object):
+class DummyNode(dict):
     def __init__(self, environment_id):
-        self._environment_id = environment_id
+        self['environment_id'] = environment_id
+        self['type'] = 'dummynode'
         self._started = False
     @property
     def environment_id(self):
-        return self._environment_id
+        return self['environment_id']
     @property
     def started(self):
         return self._started
