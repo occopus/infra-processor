@@ -6,8 +6,6 @@
 
 .. moduleauthor:: Adam Visegradi <adam.visegradi@sztaki.mta.hu>
 
-.. autoclass:: AbstractInfraProcessor
-    :members:
 .. autoclass:: Command
     :members:
 
@@ -17,8 +15,9 @@
         :members:
 """
 
-__all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton',
-           'InfraProcessor',
+__all__ = ['InfraProcessor',
+           'RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton',
+           'BasicInfraProcessor',
            'Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy',
            'CreateEnvironment', 'CreateNode', 'DropNode', 'DropEnvironment',
            'Mgmt_SkipUntil']
@@ -26,6 +25,8 @@ __all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton',
 import logging
 import occo.util as util
 import occo.util.communication as comm
+import occo.util.factory as factory
+import occo.infobroker as ib
 from node_resolution import resolve_node
 import time
 import threading
@@ -78,10 +79,13 @@ class Strategy(object):
 class SequentialStrategy(Strategy):
     """Implements :class:`Strategy`, performing the commands sequentially."""
     def perform(self, infraprocessor, instruction_list):
+        results = list()
         for i in instruction_list:
             if self.cancelled:
                 break
-            i.perform(infraprocessor)
+            result = i.perform(infraprocessor)
+            results.append(result)
+        return results
 
 class PerformThread(threading.Thread):
     """
@@ -98,7 +102,7 @@ class PerformThread(threading.Thread):
         self.instruction = instruction
     def run(self):
         try:
-            self.instruction.perform(self.infraprocessor)
+            self.result = self.instruction.perform(self.infraprocessor)
         except BaseException:
             log.exception("Unhandled exception in thread:")
 
@@ -113,11 +117,13 @@ class ParallelProcessesStrategy(Strategy):
             log.debug('Starting thread for %r', t.instruction)
             t.start()
             log.debug('STARTED Thread for %r', t.instruction)
-        # Wait for threads to finish
+        results = list()
+        # Wait for results
         for t in threads:
             log.debug('Joining thread for %r', t.instruction)
             t.join()
             log.debug('FINISHED Thread for %r', t.instruction)
+            results.append(t.result)
 
 class RemotePushStrategy(Strategy):
     """
@@ -141,10 +147,13 @@ class RemotePushStrategy(Strategy):
         self.queue = destination_queue
     def perform(self, infraprocessor, instruction_list):
         #TODO push as list; keep instructions together
+        results = list()
         for i in instruction_list:
             if self.cancelled:
                 break
-            self.queue.push_message(i)
+            result = self.queue.push_message(i)
+            results.append(result)
+        return results
 
 ##########################
 # Infrastructure Processor
@@ -158,7 +167,7 @@ class Command(object):
     If they override it, sub-classes must the call ``Command``'s constructor
     to ensure ``timestamp`` is set. This is important because the timestamp is
     used to clear the infrastructure processor queue.
-    See: :meth:`AbstractInfraProcessor.cancel_pending`.
+    See: :meth:`InfraProcessor.cancel_pending`.
 
     :var timestamp: The time of creating the command.
     """
@@ -168,7 +177,7 @@ class Command(object):
         """Perform the algorithm represented by this command."""
         raise NotImplementedError()
 
-class AbstractInfraProcessor(object):
+class InfraProcessor(factory.MultiBackend):
     """
     Abstract definition of the Infrastructure Processor.
 
@@ -238,7 +247,7 @@ class AbstractInfraProcessor(object):
         # Don't bother with commands known to be already cancelled.
         filtered_list = list(filter(self._not_cancelled, instruction_list))
         log.debug('Filtered list: %r', filtered_list)
-        self.strategy.perform(self, filtered_list)
+        return self.strategy.perform(self, filtered_list)
 
     def cri_create_env(self, environment_id):
         """ Create a primitive that will create an infrastructure instance. """
@@ -283,7 +292,8 @@ class CreateEnvironment(Command):
         Command.__init__(self)
         self.environment_id = environment_id
     def perform(self, infraprocessor):
-        infraprocessor.servicecomposer.create_environment(self.environment_id)
+        return infraprocessor.servicecomposer.create_environment(
+            self.environment_id)
 
 class CreateNode(Command):
     """
@@ -365,6 +375,8 @@ class CreateNode(Command):
             time.sleep(infraprocessor.poll_delay)
         log.debug("Node '%s' started; proceeding", node_id)
 
+        return instance_data
+
 class DropNode(Command):
     """
     Implementation of node deletion using a
@@ -398,13 +410,11 @@ class DropEnvironment(Command):
 ####################
 ## IP implementation
 
-class InfraProcessor(AbstractInfraProcessor):
+@factory.register(InfraProcessor, 'basic')
+class BasicInfraProcessor(InfraProcessor):
     """
-    Implementation of :class:`AbstractInfraProcessor` using the primitives
-    defined in this module.
-
-    :param infobroker: Information source.
-    :type infobroker: :class:`~occo.infobroker.provider.InfoProvider`
+    Implementation of :class:`InfraProcessor` using the primitives defined in
+    this module.
 
     :param user_data_store: Database manipulation.
     :type user_data_store: :class:`~occo.infobroker.UDS`
@@ -425,14 +435,15 @@ class InfraProcessor(AbstractInfraProcessor):
         :meth:`CreateNode.perform`. ``poll_delay`` is the number of seconds to
         wait between polls.
     """
-    def __init__(self, infobroker, user_data_store,
+    def __init__(self, user_data_store,
                  cloudhandler, servicecomposer,
                  process_strategy=SequentialStrategy(),
                  poll_delay=10,
                  **config):
-        super(InfraProcessor, self).__init__(process_strategy=process_strategy)
+        super(BasicInfraProcessor, self) \
+            .__init__(process_strategy=process_strategy)
         self.__dict__.update(config)
-        self.ib = infobroker
+        self.ib = ib.main_info_broker
         self.uds = user_data_store
         self.cloudhandler = cloudhandler
         self.servicecomposer = servicecomposer
@@ -481,12 +492,13 @@ class Mgmt_SkipUntil(Command):
     def perform(self, infraprocessor):
         infraprocessor.cancel_upcoming(self.deadline)
 
-class RemoteInfraProcessor(InfraProcessor):
+@factory.register(InfraProcessor, 'remote')
+class RemoteInfraProcessor(BasicInfraProcessor):
     """
     A remote implementation of :class:`InfraProcessor`.
 
     The exact same command objects are created by this class as that by the
-    :class:`InfraProcessor`. The difference is that this class uses the
+    :class:`BasicInfraProcessor`. The difference is that this class uses the
     :class:`RemotePushStrategy` to perform instructions.
 
     This class communicates with a :class:`RemoteInfraProcessorSkeleton`
@@ -496,16 +508,16 @@ class RemoteInfraProcessor(InfraProcessor):
         communication channel.
 
     .. todo:: Rethink queue context management.
-        See :meth:`AbstractInfraProcessor.__enter__`.
+        See :meth:`InfraProcessor.__enter__`.
     """
     def __init__(self, destination_queue_cfg):
-        # Calling only the AbstractIP's __init__
-        # (and skipping InfraProcessor.__init__) is intentional:
+        # Calling only the abstract IP's __init__
+        # (and skipping BasicInfraProcessor.__init__) is intentional:
         #
-        # Command classes must be inherited (hence the InfraProcessor parent),
-        # but this class does not need the IP's backends (infobroker,
+        # Command classes must be inherited (hence the BasicInfraProcessor
+        # parent), but this class does not need the IP's backends (infobroker,
         # cloudhandler, etc.)
-        AbstractInfraProcessor.__init__(
+        InfraProcessor.__init__(
             self, process_strategy=RemotePushStrategy(
                     comm.AsynchronProducer(**destination_queue_cfg)))
 
@@ -517,7 +529,7 @@ class RemoteInfraProcessor(InfraProcessor):
 
     def cancel_pending(self, deadline):
         """
-        Implementation of :meth:`AbstractInfraProcessor.cancel_pending` with
+        Implementation of :meth:`InfraProcessor.cancel_pending` with
         :class:`Mgmt_SkipUntil`.
         """
         self.push_instructions([Mgmt_SkipUntil(deadline)])
@@ -534,7 +546,7 @@ class RemoteInfraProcessorSkeleton(object):
     :param backend_ip: The "real" *I*\ nfrastructure *P*\ rocessor (hence
         ``_ip``).  Actually, this may be another :class:`RemoteInfraProcessor`
         if necessary for some twisted reason...
-    :type backend_ip: :class:`AbstractInfraProcessor`
+    :type backend_ip: :class:`InfraProcessor`
 
     :param ip_queue_cfg: Configuration intended for the backend
         :class:`~occo.util.communication.comm.EventDrivenConsumer` for the

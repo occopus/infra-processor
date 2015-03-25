@@ -53,10 +53,12 @@ def resolve_node(ib, node_id, node_description):
     node_definition = ib.get('node.definition',
                              node_description['type'],
                              node_description.get('backend_id'))
-    resolver = Resolver(protocol=node_definition['implementation_type'],
-                        info_broker=ib,
-                        node_id=node_id,
-                        node_description=node_description)
+    resolver = factory.MultiBackend.instantiate(
+        Resolver,
+        node_definition['implementation_type'],
+        info_broker=ib,
+        node_id=node_id,
+        node_description=node_description)
     resolver.resolve_node(node_definition)
     return node_definition
 
@@ -76,7 +78,7 @@ class Resolver(factory.MultiBackend):
     :param node_description: The original node description.
     :type node_description: :ref:`Node Description <nodedescription>`
     """
-    def __init__(self, protocol, info_broker, node_id, node_description):
+    def __init__(self, info_broker, node_id, node_description):
         self.info_broker = info_broker
         self.node_id = node_id
         self.node_description = node_description
@@ -139,4 +141,17 @@ class ChefCloudinitResolver(Resolver):
                                               node_definition['backend_id'],
                                               node['user_id'])
         node_definition['context'] = template.render(**node_definition)
+        return node_definition
+
+@factory.register(Resolver, 'cooked')
+class ChefCloudinitResolver(Resolver):
+    """
+    Implementation of :class:`Resolver` for implementations already resolved.
+
+    This resolver returns the node_definition as-is.
+    """
+    def resolve_node(self, node_definition):
+        """
+        Implementation of :meth:`Resolver.resolve_node`.
+        """
         return node_definition

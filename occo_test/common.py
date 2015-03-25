@@ -20,13 +20,20 @@ import uuid
 def uid():
     return str(uuid.uuid4())
 
-class DummyNode(object):
+dummydata = {
+    'node.definition' : {
+        'implementation_type' : 'cooked'
+    }
+}
+
+class DummyNode(dict):
     def __init__(self, environment_id):
-        self._environment_id = environment_id
+        self['environment_id'] = environment_id
+        self['type'] = 'dummynode'
         self._started = False
     @property
     def environment_id(self):
-        return self._environment_id
+        return self['environment_id']
     @property
     def started(self):
         return self._started
@@ -34,11 +41,13 @@ class DummyNode(object):
         return '%s_%r'%(self.id, self.started)
 
 class DummyInfoBroker(object):
-    def __init__(self):
+    def __init__(self, main_info_broker=False):
+        import occo.infobroker as ib
+        ib.main_info_broker = self
         self.environments = dict()
         self.node_lookup = dict()
-    def get(key):
-        pass
+    def get(self, key, *args, **kwargs):
+        return dummydata[key]
     def __repr__(self):
         log.info('%r', self.environments)
         nodelist_repr = lambda nodelist: ', '.join(repr(n) for n in nodelist)
