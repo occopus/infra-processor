@@ -79,10 +79,13 @@ class Strategy(object):
 class SequentialStrategy(Strategy):
     """Implements :class:`Strategy`, performing the commands sequentially."""
     def perform(self, infraprocessor, instruction_list):
+        results = list()
         for i in instruction_list:
             if self.cancelled:
                 break
-            i.perform(infraprocessor)
+            result = i.perform(infraprocessor)
+            results.append(result)
+        return results
 
 class PerformThread(threading.Thread):
     """
@@ -99,7 +102,7 @@ class PerformThread(threading.Thread):
         self.instruction = instruction
     def run(self):
         try:
-            self.instruction.perform(self.infraprocessor)
+            self.result = self.instruction.perform(self.infraprocessor)
         except BaseException:
             log.exception("Unhandled exception in thread:")
 
@@ -114,11 +117,13 @@ class ParallelProcessesStrategy(Strategy):
             log.debug('Starting thread for %r', t.instruction)
             t.start()
             log.debug('STARTED Thread for %r', t.instruction)
-        # Wait for threads to finish
+        results = list()
+        # Wait for results
         for t in threads:
             log.debug('Joining thread for %r', t.instruction)
             t.join()
             log.debug('FINISHED Thread for %r', t.instruction)
+            results.append(t.result)
 
 class RemotePushStrategy(Strategy):
     """
@@ -142,10 +147,13 @@ class RemotePushStrategy(Strategy):
         self.queue = destination_queue
     def perform(self, infraprocessor, instruction_list):
         #TODO push as list; keep instructions together
+        results = list()
         for i in instruction_list:
             if self.cancelled:
                 break
-            self.queue.push_message(i)
+            result = self.queue.push_message(i)
+            results.append(result)
+        return results
 
 ##########################
 # Infrastructure Processor
@@ -239,7 +247,7 @@ class InfraProcessor(factory.MultiBackend):
         # Don't bother with commands known to be already cancelled.
         filtered_list = list(filter(self._not_cancelled, instruction_list))
         log.debug('Filtered list: %r', filtered_list)
-        self.strategy.perform(self, filtered_list)
+        return self.strategy.perform(self, filtered_list)
 
     def cri_create_env(self, environment_id):
         """ Create a primitive that will create an infrastructure instance. """
@@ -284,7 +292,8 @@ class CreateEnvironment(Command):
         Command.__init__(self)
         self.environment_id = environment_id
     def perform(self, infraprocessor):
-        infraprocessor.servicecomposer.create_environment(self.environment_id)
+        return infraprocessor.servicecomposer.create_environment(
+            self.environment_id)
 
 class CreateNode(Command):
     """
@@ -365,6 +374,8 @@ class CreateNode(Command):
             log.debug("Node status: '%s'; waiting...", status)
             time.sleep(infraprocessor.poll_delay)
         log.debug("Node '%s' started; proceeding", node_id)
+
+        return instance_data
 
 class DropNode(Command):
     """
