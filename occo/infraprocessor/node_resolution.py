@@ -54,10 +54,11 @@ def resolve_node(ib, node_id, node_description):
                              node_description['type'],
                              node_description.get('backend_id'))
     resolver = factory.MultiBackend.instantiate(
-        Resolver(protocol=node_definition['implementation_type'],
-                 info_broker=ib,
-                 node_id=node_id,
-                 node_description=node_description))
+        Resolver,
+        node_definition['implementation_type'],
+        info_broker=ib,
+        node_id=node_id,
+        node_description=node_description)
     resolver.resolve_node(node_definition)
     return node_definition
 
