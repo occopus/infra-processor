@@ -146,9 +146,11 @@ class ChefCloudinitResolver(Resolver):
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
                                               node['user_id'])
+        from occo.infobroker import main_info_broker
         source_data = dict()
         source_data.update(node)
         source_data.update(node_definition)
+        source_data['ibget'] = main_info_broker.get
 
         node_definition['context'] = template.render(**source_data)
         return node_definition
