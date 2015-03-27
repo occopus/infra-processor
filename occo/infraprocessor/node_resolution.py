@@ -125,13 +125,14 @@ class ChefCloudinitResolver(Resolver):
         ib = self.info_broker
         node_id = self.node_id
 
-        # TODO: the context depends on the sc AND the ch too.
-        # The same service composer may require different contexts for
-        # different backends.
         sc_data = ib.get('service_composer.aux_data',
                          node_definition['service_composer_id'])
+
+        # `context_template` is also removed from the definition, as
+        # it will be replaced with the rendered `context`
+        node_context = node_definition.pop('context_template', None)
         context_template = util.coalesce(
-            node_definition.get('context_template'),
+            node_context,
             sc_data['context_template'],
             '')
         log.debug('Context template:\n%s', context_template)
@@ -145,7 +146,11 @@ class ChefCloudinitResolver(Resolver):
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
                                               node['user_id'])
-        node_definition['context'] = template.render(**node_definition)
+        source_data = dict()
+        source_data.update(node)
+        source_data.update(node_definition)
+
+        node_definition['context'] = template.render(**source_data)
         return node_definition
 
 @factory.register(Resolver, 'cooked')
