@@ -139,7 +139,7 @@ class ChefCloudinitResolver(Resolver):
         template = jinja2.Template(context_template)
 
         # Amend resolved node with basic information
-        node_definition['id'] = node_id
+        node_definition['node_id'] = node_id
         node_definition['name'] = node['name']
         node_definition['environment_id'] = node['environment_id']
         # Resolve backend-specific authentication information
