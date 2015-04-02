@@ -115,6 +115,40 @@ class ChefCloudinitResolver(Resolver):
     .. _`cloud-init`: https://cloudinit.readthedocs.org/en/latest/
     .. _Chef: https://www.chef.io/
     """
+
+    def extract_template(self, node_definition):
+        # `context_template` is also removed from the definition, as
+        # it will be replaced with the rendered `context`
+        from occo.infobroker import main_info_broker
+        sc_data = main_info_broker.get('service_composer.aux_data',
+                                       node_definition['service_composer_id'])
+        node_context = node_definition.pop('context_template', None)
+        context_template = util.coalesce(
+            node_context,
+            sc_data['context_template'],
+            '')
+        log.debug('Context template:\n%s', context_template)
+        return jinja2.Template(context_template)
+
+    def resolve_attributes(self, node_definition):
+        attrs = node_definition.get('attributes', dict())
+        attr_mapping = node_definition.get('mapping', dict())
+
+        return attrs
+
+    def assemble_template_data(self, node, node_definition):
+        from occo.infobroker import main_info_broker
+        source_data = dict()
+        source_data.update(node)
+        source_data.update(node_definition)
+        source_data['ibget'] = main_info_broker.get
+        return source_data
+
+    def render_template(self, node, node_definition):
+        template = self.extract_template(node_definition)
+        return template.render(
+            **self.assemble_template_data(node, node_definition))
+
     def resolve_node(self, node_definition):
         """
         Implementation of :meth:`Resolver.resolve_node`.
@@ -125,19 +159,6 @@ class ChefCloudinitResolver(Resolver):
         ib = self.info_broker
         node_id = self.node_id
 
-        sc_data = ib.get('service_composer.aux_data',
-                         node_definition['service_composer_id'])
-
-        # `context_template` is also removed from the definition, as
-        # it will be replaced with the rendered `context`
-        node_context = node_definition.pop('context_template', None)
-        context_template = util.coalesce(
-            node_context,
-            sc_data['context_template'],
-            '')
-        log.debug('Context template:\n%s', context_template)
-        template = jinja2.Template(context_template)
-
         # Amend resolved node with basic information
         node_definition['node_id'] = node_id
         node_definition['name'] = node['name']
@@ -146,17 +167,14 @@ class ChefCloudinitResolver(Resolver):
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
                                               node['user_id'])
-        from occo.infobroker import main_info_broker
-        source_data = dict()
-        source_data.update(node)
-        source_data.update(node_definition)
-        source_data['ibget'] = main_info_broker.get
 
-        node_definition['context'] = template.render(**source_data)
+        node_definition['context'] = self.render_template(node, node_definition)
+        node_definition['attributes'] = self.resolve_attributes(node_definition)
+
         return node_definition
 
 @factory.register(Resolver, 'cooked')
-class ChefCloudinitResolver(Resolver):
+class IdentityResolver(Resolver):
     """
     Implementation of :class:`Resolver` for implementations already resolved.
 
