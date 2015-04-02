@@ -167,19 +167,15 @@ class ChefCloudinitResolver(Resolver):
         ib = self.info_broker
         node_id = self.node_id
 
-        # Amend resolved node with basic information
+        # Amend resolved node with new information
         node_definition['node_id'] = node_id
         node_definition['name'] = node['name']
         node_definition['environment_id'] = node['environment_id']
-        # Resolve backend-specific authentication information
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
                                               node['user_id'])
-
         node_definition['context'] = self.render_template(node, node_definition)
         node_definition['attributes'] = self.resolve_attributes(node_definition)
-
-        return node_definition
 
 @factory.register(Resolver, 'cooked')
 class IdentityResolver(Resolver):
@@ -192,4 +188,4 @@ class IdentityResolver(Resolver):
         """
         Implementation of :meth:`Resolver.resolve_node`.
         """
-        return node_definition
+        pass
