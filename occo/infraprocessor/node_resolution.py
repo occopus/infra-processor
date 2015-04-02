@@ -119,15 +119,23 @@ class ChefCloudinitResolver(Resolver):
     def extract_template(self, node_definition):
         # `context_template` is also removed from the definition, as
         # it will be replaced with the rendered `context`
-        from occo.infobroker import main_info_broker
-        sc_data = main_info_broker.get('service_composer.aux_data',
-                                       node_definition['service_composer_id'])
-        node_context = node_definition.pop('context_template', None)
-        context_template = util.coalesce(
-            node_context,
-            sc_data['context_template'],
-            '')
-        log.debug('Context template:\n%s', context_template)
+
+        def context_list():
+            yield ('node definition',
+                   node_definition.pop('context_template', None))
+
+            from occo.infobroker import main_info_broker
+            sc_data = main_info_broker.get(
+                'service_composer.aux_data',
+                node_definition['service_composer_id'])
+            yield ('service composer default',
+                   sc_data.get('context_template', None))
+
+            yield ('n/a', '')
+
+        context_source, context_template = next(context_list())
+        log.debug('Context template from %s:\n%s',
+                  context_source, context_template)
         return jinja2.Template(context_template)
 
     def resolve_attributes(self, node_definition):
