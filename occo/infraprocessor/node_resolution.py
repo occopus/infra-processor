@@ -117,10 +117,10 @@ class ChefCloudinitResolver(Resolver):
     """
 
     def extract_template(self, node_definition):
-        # `context_template` is also removed from the definition, as
-        # it will be replaced with the rendered `context`
 
         def context_list():
+            # `context_template` is also removed from the definition, as
+            # it will be replaced with the rendered `context`
             yield ('node definition',
                    node_definition.pop('context_template', None))
 
@@ -136,6 +136,7 @@ class ChefCloudinitResolver(Resolver):
         context_source, context_template = next(context_list())
         log.debug('Context template from %s:\n%s',
                   context_source, context_template)
+
         return jinja2.Template(context_template)
 
     def resolve_attributes(self, node_definition):
