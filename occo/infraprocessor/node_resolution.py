@@ -146,6 +146,19 @@ class ChefCloudinitResolver(Resolver):
 
         return attrs
 
+    def extract_synch_attrs(self, node):
+        """
+        Fill synch_attrs.
+
+        .. todo:: Maybe this should be moved to the Compiler. The IP
+            depends on it, not the Chef service-composer.
+        """
+        outedges = node.get('mappings', dict()).get('outbound', dict())
+
+        return [mapping['attributes'][0]
+                for mappings in outedges.itervalues() for mapping in mappings
+                if mapping['synch']]
+
     def assemble_template_data(self, node, node_definition):
         from occo.infobroker import main_info_broker
         source_data = dict()
@@ -178,6 +191,8 @@ class ChefCloudinitResolver(Resolver):
                                               node['user_id'])
         node_definition['context'] = self.render_template(node, node_definition)
         node_definition['attributes'] = self.resolve_attributes(node_definition)
+        node_definition['synch_attrs'] = \
+            self.extract_synch_attrs(node)
 
 @factory.register(Resolver, 'cooked')
 class IdentityResolver(Resolver):
