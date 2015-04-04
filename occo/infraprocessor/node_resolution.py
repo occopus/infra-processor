@@ -133,7 +133,8 @@ class ChefCloudinitResolver(Resolver):
 
             yield ('n/a', '')
 
-        context_source, context_template = next(context_list())
+        context_source, context_template = next(
+            i for i in context_list() if i[1] is not None)
         log.debug('Context template from %s:\n%s',
                   context_source, context_template)
 
