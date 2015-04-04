@@ -373,7 +373,34 @@ class CreateNode(Command):
                 break
             log.debug("Node status: '%s'; waiting...", status)
             time.sleep(infraprocessor.poll_delay)
-        log.debug("Node '%s' started; proceeding", node_id)
+        log.info("Node %s/%s/%s has started",
+                 node['environment_id'], node['name'], node_id)
+
+        # Wait for required attributes to appear
+        while True:
+            all_ok = True
+            for attribute in resolved_node['synch_attrs']:
+                log.debug('Checking attribute availability: %r.', attribute)
+                try:
+                    value = ib.get('node.attribute', node_id, attribute)
+                except KeyError:
+                    all_ok = False
+                else:
+                    all_ok = all_ok and (value is not None)
+
+                if not all_ok:
+                    log.debug(
+                        'Required attributes of %s are not ready. Waiting...',
+                        node_id)
+                    log.debug('Attribute %r is still unavailable.',
+                              attribute)
+                    break
+            if all_ok:
+                break
+            else:
+                time.sleep(infraprocessor.poll_delay)
+        log.debug(
+            "Node '%s' started, all attributes available; proceeding", node_id)
 
         return instance_data
 
