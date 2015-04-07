@@ -140,7 +140,7 @@ class ChefCloudinitResolver(Resolver):
 
         return jinja2.Template(context_template)
 
-    def resolve_attributes(self, node_definition):
+    def resolve_attributes(self, node_definition, template_data):
         attrs = node_definition.get('attributes', dict())
         attr_mapping = node_definition.get('mapping', dict())
 
@@ -167,10 +167,9 @@ class ChefCloudinitResolver(Resolver):
         source_data['ibget'] = main_info_broker.get
         return source_data
 
-    def render_template(self, node, node_definition):
+    def render_template(self, node, node_definition, template_data):
         template = self.extract_template(node_definition)
-        return template.render(
-            **self.assemble_template_data(node, node_definition))
+        return template.render(**template_data)
 
     def resolve_node(self, node_definition):
         """
@@ -181,6 +180,7 @@ class ChefCloudinitResolver(Resolver):
         node = self.node_description
         ib = self.info_broker
         node_id = self.node_id
+        template_data = self.assemble_template_data(node, node_definition)
 
         # Amend resolved node with new information
         node_definition['node_id'] = node_id
@@ -189,8 +189,10 @@ class ChefCloudinitResolver(Resolver):
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
                                               node['user_id'])
-        node_definition['context'] = self.render_template(node, node_definition)
-        node_definition['attributes'] = self.resolve_attributes(node_definition)
+        node_definition['context'] = self.render_template(
+            node, node_definition, template_data)
+        node_definition['attributes'] = self.resolve_attributes(
+            node_definition, template_data)
         node_definition['synch_attrs'] = \
             self.extract_synch_attrs(node)
 
