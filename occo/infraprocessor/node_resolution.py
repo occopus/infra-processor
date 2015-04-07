@@ -140,9 +140,30 @@ class ChefCloudinitResolver(Resolver):
 
         return jinja2.Template(context_template)
 
-    def resolve_attributes(self, node_definition, template_data):
-        attrs = node_definition.get('attributes', dict())
-        attr_mapping = node_definition.get('mapping', dict())
+    def attr_template_resolve(self, attrs, template_data):
+        if type(attrs) is dict:
+            for k, v in attrs.iteritems():
+                attrs[k] = self.attr_template_resolve(v, template_data)
+            return attrs
+        elif type(attrs) is list:
+            for i in xrange(len(attrs)):
+                attrs[i] = self.attr_template_resolve(attrs[i], template_data)
+            return attrs
+        elif type(attrs) is str:
+            template = jinja2.Template(attrs)
+            return template.render(**template_data)
+        else:
+            return attrs
+
+    def resolve_attributes(self, node, node_definition, template_data):
+        attrs = node.get('attributes', dict())
+        attr_mapping = node.get('mapping', dict())
+
+        self.attr_template_resolve(attrs, template_data)
+
+        connect_attrs = dict(connections=dict())
+        for k, v in attr_mapping.iteritems():
+            print k, v
 
         return attrs
 
@@ -192,7 +213,7 @@ class ChefCloudinitResolver(Resolver):
         node_definition['context'] = self.render_template(
             node, node_definition, template_data)
         node_definition['attributes'] = self.resolve_attributes(
-            node_definition, template_data)
+            node, node_definition, template_data)
         node_definition['synch_attrs'] = \
             self.extract_synch_attrs(node)
 
