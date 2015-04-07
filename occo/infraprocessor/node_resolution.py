@@ -155,15 +155,24 @@ class ChefCloudinitResolver(Resolver):
         else:
             return attrs
 
+    def attr_connect_resolve(self, node, attrs, attr_mapping):
+        connections = [
+            dict(source_role="{0}_{1}".format(node['environment_id'], role),
+                 source_attribute=mapping['attributes'][0],
+                 destination_attribute=mapping['attributes'][1])
+            for role, mappings in attr_mapping.iteritems()
+            for mapping in mappings
+        ]
+
+        attrs['connections'] = connections
+
     def resolve_attributes(self, node, node_definition, template_data):
-        attrs = node.get('attributes', dict())
-        attr_mapping = node.get('mapping', dict())
+        attrs = node_definition.get('attributes', dict())
+        attrs.update(node.get('attributes', dict()))
+        attr_mapping = node.get('mappings', dict()).get('inbound', dict())
 
         self.attr_template_resolve(attrs, template_data)
-
-        connect_attrs = dict(connections=dict())
-        for k, v in attr_mapping.iteritems():
-            print k, v
+        self.attr_connect_resolve(node, attrs, attr_mapping)
 
         return attrs
 
