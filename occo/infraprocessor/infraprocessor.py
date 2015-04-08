@@ -440,11 +440,12 @@ class BasicInfraProcessor(InfraProcessor):
     """
     def __init__(self, user_data_store,
                  cloudhandler, servicecomposer,
-                 process_strategy=SequentialStrategy(),
+                 process_strategy='sequential',
                  poll_delay=10,
                  **config):
         super(BasicInfraProcessor, self) \
-            .__init__(process_strategy=process_strategy)
+            .__init__(process_strategy=factory.MultiBackend.instantiate(
+                Strategy, process_strategy))
         self.__dict__.update(config)
         self.ib = ib.main_info_broker
         self.uds = user_data_store
@@ -520,9 +521,7 @@ class RemoteInfraProcessor(BasicInfraProcessor):
         # Command classes must be inherited (hence the BasicInfraProcessor
         # parent), but this class does not need the IP's backends (infobroker,
         # cloudhandler, etc.)
-        InfraProcessor.__init__(
-            self, process_strategy=RemotePushStrategy(
-                    comm.AsynchronProducer(**destination_queue_cfg)))
+        InfraProcessor.__init__(self, process_strategy='remote')
 
     def __enter__(self):
         self.strategy.queue.__enter__()
