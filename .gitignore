@@ -5,6 +5,7 @@ occo_test/drop_nodes.yaml
 *auth_data*
 
 # Vi swap file
+*.swo
 *.swp
 
 # Byte-compiled / optimized / DLL files
