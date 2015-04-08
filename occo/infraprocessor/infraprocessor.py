@@ -39,7 +39,7 @@ log = logging.getLogger('occo.infraprocessor')
 # Strategies to process parallelizable instructions
 ###
 
-class Strategy(object):
+class Strategy(factory.MultiBackend):
     """
     Abstract strategy for processing a batch of *independent* commands.
 
@@ -76,6 +76,7 @@ class Strategy(object):
         """
         raise NotImplementedError()
 
+@factory.register(Strategy, 'sequential')
 class SequentialStrategy(Strategy):
     """Implements :class:`Strategy`, performing the commands sequentially."""
     def perform(self, infraprocessor, instruction_list):
@@ -106,6 +107,7 @@ class PerformThread(threading.Thread):
         except BaseException:
             log.exception("Unhandled exception in thread:")
 
+@factory.register(Strategy, 'parallel')
 class ParallelProcessesStrategy(Strategy):
     """
     Implements :class:`Strategy`, performing the commands in a parallel manner.
@@ -125,6 +127,7 @@ class ParallelProcessesStrategy(Strategy):
             log.debug('FINISHED Thread for %r', t.instruction)
             results.append(t.result)
 
+@factory.register(Strategy, 'remote')
 class RemotePushStrategy(Strategy):
     """
     Implements :class:`Strategy` by simply pushing the instruction list to
