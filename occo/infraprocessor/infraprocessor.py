@@ -521,9 +521,7 @@ class RemoteInfraProcessor(BasicInfraProcessor):
         # Command classes must be inherited (hence the BasicInfraProcessor
         # parent), but this class does not need the IP's backends (infobroker,
         # cloudhandler, etc.)
-        InfraProcessor.__init__(
-            self, process_strategy=RemotePushStrategy(
-                    comm.AsynchronProducer(**destination_queue_cfg)))
+        InfraProcessor.__init__(self, process_strategy='remote')
 
     def __enter__(self):
         self.strategy.queue.__enter__()
