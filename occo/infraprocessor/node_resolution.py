@@ -115,6 +115,92 @@ class ChefCloudinitResolver(Resolver):
     .. _`cloud-init`: https://cloudinit.readthedocs.org/en/latest/
     .. _Chef: https://www.chef.io/
     """
+
+    def extract_template(self, node_definition):
+
+        def context_list():
+            # `context_template` is also removed from the definition, as
+            # it will be replaced with the rendered `context`
+            yield ('node definition',
+                   node_definition.pop('context_template', None))
+
+            from occo.infobroker import main_info_broker
+            sc_data = main_info_broker.get(
+                'service_composer.aux_data',
+                node_definition['service_composer_id'])
+            yield ('service composer default',
+                   sc_data.get('context_template', None))
+
+            yield ('n/a', '')
+
+        context_source, context_template = next(
+            i for i in context_list() if i[1] is not None)
+        log.debug('Context template from %s:\n%s',
+                  context_source, context_template)
+
+        return jinja2.Template(context_template)
+
+    def attr_template_resolve(self, attrs, template_data):
+        if type(attrs) is dict:
+            for k, v in attrs.iteritems():
+                attrs[k] = self.attr_template_resolve(v, template_data)
+            return attrs
+        elif type(attrs) is list:
+            for i in xrange(len(attrs)):
+                attrs[i] = self.attr_template_resolve(attrs[i], template_data)
+            return attrs
+        elif type(attrs) is str:
+            template = jinja2.Template(attrs)
+            return template.render(**template_data)
+        else:
+            return attrs
+
+    def attr_connect_resolve(self, node, attrs, attr_mapping):
+        connections = [
+            dict(source_role="{0}_{1}".format(node['environment_id'], role),
+                 source_attribute=mapping['attributes'][0],
+                 destination_attribute=mapping['attributes'][1])
+            for role, mappings in attr_mapping.iteritems()
+            for mapping in mappings
+        ]
+
+        attrs['connections'] = connections
+
+    def resolve_attributes(self, node, node_definition, template_data):
+        attrs = node_definition.get('attributes', dict())
+        attrs.update(node.get('attributes', dict()))
+        attr_mapping = node.get('mappings', dict()).get('inbound', dict())
+
+        self.attr_template_resolve(attrs, template_data)
+        self.attr_connect_resolve(node, attrs, attr_mapping)
+
+        return attrs
+
+    def extract_synch_attrs(self, node):
+        """
+        Fill synch_attrs.
+
+        .. todo:: Maybe this should be moved to the Compiler. The IP
+            depends on it, not the Chef service-composer.
+        """
+        outedges = node.get('mappings', dict()).get('outbound', dict())
+
+        return [mapping['attributes'][0]
+                for mappings in outedges.itervalues() for mapping in mappings
+                if mapping['synch']]
+
+    def assemble_template_data(self, node, node_definition):
+        from occo.infobroker import main_info_broker
+        source_data = dict()
+        source_data.update(node)
+        source_data.update(node_definition)
+        source_data['ibget'] = main_info_broker.get
+        return source_data
+
+    def render_template(self, node, node_definition, template_data):
+        template = self.extract_template(node_definition)
+        return template.render(**template_data)
+
     def resolve_node(self, node_definition):
         """
         Implementation of :meth:`Resolver.resolve_node`.
@@ -124,27 +210,24 @@ class ChefCloudinitResolver(Resolver):
         node = self.node_description
         ib = self.info_broker
         node_id = self.node_id
+        template_data = self.assemble_template_data(node, node_definition)
 
-        # TODO: the context depends on the sc AND the ch too.
-        # The same service composer may require different contexts for
-        # different backends.
-        sc_data = ib.get('service_composer.aux_data',
-                         node_definition['service_composer_id'])
-        template = jinja2.Template(sc_data['context_template'])
-
-        # Amend resolved node with basic information
-        node_definition['id'] = node_id
+        # Amend resolved node with new information
+        node_definition['node_id'] = node_id
         node_definition['name'] = node['name']
         node_definition['environment_id'] = node['environment_id']
-        # Resolve backend-specific authentication information
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
                                               node['user_id'])
-        node_definition['context'] = template.render(**node_definition)
-        return node_definition
+        node_definition['context'] = self.render_template(
+            node, node_definition, template_data)
+        node_definition['attributes'] = self.resolve_attributes(
+            node, node_definition, template_data)
+        node_definition['synch_attrs'] = \
+            self.extract_synch_attrs(node)
 
 @factory.register(Resolver, 'cooked')
-class ChefCloudinitResolver(Resolver):
+class IdentityResolver(Resolver):
     """
     Implementation of :class:`Resolver` for implementations already resolved.
 
@@ -154,4 +237,4 @@ class ChefCloudinitResolver(Resolver):
         """
         Implementation of :meth:`Resolver.resolve_node`.
         """
-        return node_definition
+        pass
