@@ -191,7 +191,7 @@ class ChefCloudinitResolver(Resolver):
 
     def assemble_template_data(self, node, node_definition):
         from occo.infobroker import main_info_broker
-        source_data = dict()
+        source_data = dict(node_id=self.node_id)
         source_data.update(node)
         source_data.update(node_definition)
         source_data['ibget'] = main_info_broker.get
