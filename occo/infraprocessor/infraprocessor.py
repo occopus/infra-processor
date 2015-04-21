@@ -364,8 +364,17 @@ class CreateNode(Command):
         infraprocessor.uds.register_started_node(
             node['environment_id'], node['name'], instance_data)
 
+        ip_printed = False
         # Wait for the node to start
         while True:
+            if not ip_printed:
+                ip = ib.get('node.cloud_attribute', 'ipaddress', instance_id)
+                if ip:
+                    log.info(
+                        "Node %s/%s/%s received IP address: %r",
+                        node['environment_id'], node['name'], node_id, ip)
+                    ip_printed = True
+
             # TODO add timeout
             status = ib.get('node.state', instance_data)
             # TODO handle other statuses too (error, failure, etc.)
