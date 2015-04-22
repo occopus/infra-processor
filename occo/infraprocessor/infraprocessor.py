@@ -368,7 +368,8 @@ class CreateNode(Command):
         # Wait for the node to start
         while True:
             if not ip_printed:
-                ip = ib.get('node.cloud_attribute', 'ipaddress', instance_id)
+                ip = ib.get(
+                    'node.cloud_attribute', 'ipaddress', instance_data)
                 if ip:
                     log.info(
                         "Node %s/%s/%s received IP address: %r",
