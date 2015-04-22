@@ -191,10 +191,25 @@ class ChefCloudinitResolver(Resolver):
 
     def assemble_template_data(self, node, node_definition):
         from occo.infobroker import main_info_broker
+
+        def find_node_id(node_name):
+            nodes = main_info_broker.get(
+                'node.find', node['environment_id'], node_name)
+            if not nodes:
+                raise KeyError(
+                    'No node exists with the given name', node_name)
+            elif len(nodes) > 1:
+                log.warning(
+                    'There are multiple nodes with the same node name. '
+                    'Choosing the first one as default (%s)',
+                    nodes[0]['node_id'])
+            return nodes[0]
+
         source_data = dict(node_id=self.node_id)
         source_data.update(node)
         source_data.update(node_definition)
         source_data['ibget'] = main_info_broker.get
+        source_data['find_node_id'] = find_node_id
         return source_data
 
     def render_template(self, node, node_definition, template_data):
