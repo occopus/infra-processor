@@ -8,6 +8,8 @@
 
 """
 
+from __future__ import absolute_import
+
 __all__ = ['ChefCloudinitResolver']
 
 import logging
@@ -15,6 +17,7 @@ import occo.util as util
 import occo.util.factory as factory
 import yaml
 import jinja2
+from ...node_resolution import Resolver
 
 log = logging.getLogger('occo.infraprocessor.node_resolution.chef')
 
