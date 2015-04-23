@@ -23,10 +23,7 @@ __import__('pkg_resources').declare_namespace(__name__)
 __all__ = ['resolve_node', 'Resolver']
 
 import logging
-import occo.util as util
 import occo.util.factory as factory
-import yaml
-import jinja2
 
 log = logging.getLogger('occo.infraprocessor.node_resolution')
 
