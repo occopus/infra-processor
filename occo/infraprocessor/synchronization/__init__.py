@@ -77,7 +77,6 @@ def wait_for_node(resolved_node_definition, instance_data, infraprocessor,
     log.info('Waiting for node %r to become ready using %r strategy.',
              node_id, synch_type)
 
-    import time
     while not synch.is_ready():
         log.debug('Node %r is not ready, waiting %r seconds.',
                   node_id, poll_delay)
