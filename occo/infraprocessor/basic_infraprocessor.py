@@ -117,7 +117,7 @@ class CreateNode(Command):
 
         try:
             # TODO Add timeout
-            wait_for_node(resolved_node, instance_data, infraprocessor,
+            wait_for_node(node, resolved_node, instance_data, infraprocessor,
                           infraprocessor.poll_delay)
         #TODO Handle other errors
         except Exception:

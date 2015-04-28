@@ -36,7 +36,10 @@ def sleep(timeout, cancel_event):
         time.sleep(timeout)
     return True
 
-def wait_for_node(resolved_node_definition, instance_data, infraprocessor,
+def wait_for_node(node_description,
+                  resolved_node_definition,
+                  instance_data,
+                  infraprocessor,
                   poll_delay=10, timeout=None, cancel_event=None):
     """
     Wait for the creation of the node using the appropriate
@@ -71,7 +74,8 @@ def wait_for_node(resolved_node_definition, instance_data, infraprocessor,
         synch_type = 'basic'
 
     synch = NodeSynchStrategy.instantiate(
-        synch_type, resolved_node_definition, instance_data, infraprocessor)
+        synch_type, node_description,
+        resolved_node_definition, instance_data, infraprocessor)
 
     node_id = resolved_node_definition['node_id']
     log.info('Waiting for node %r to become ready using %r strategy.',
@@ -87,7 +91,12 @@ def wait_for_node(resolved_node_definition, instance_data, infraprocessor,
     log.info('Node %r is ready.', node_id)
 
 class NodeSynchStrategy(factory.MultiBackend):
-    def __init__(self, resolved_node_definition, instance_data, infraprocessor):
+    def __init__(self,
+                 node_description,
+                 resolved_node_definition,
+                 instance_data,
+                 infraprocessor):
+        self.node_description = node_description
         self.resolved_node = resolved_node_definition
         self.instance_data = instance_data
         self.infraprocessor = infraprocessor
