@@ -116,7 +116,7 @@ class ChefCloudinitResolver(Resolver):
 
         def find_node_id(node_name):
             nodes = main_info_broker.get(
-                'node.find', node['environment_id'], node_name)
+                'node.find', infra_id=node['environment_id'], name=node_name)
             if not nodes:
                 raise KeyError(
                     'No node exists with the given name', node_name)
