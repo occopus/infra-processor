@@ -28,21 +28,25 @@ def format_bool(b):
 
 class status_component(object):
     """ Decorator to gather status components. """
-    def __init__(self, description, *lst):
-        self.lst, self.desc = lst, description
+    def __init__(self, description, *aggregators):
+        self.aggrs, self.desc = aggregators, description
     def __call__(self, fun):
-        for i in self.lst:
-            i.append(dict(desc=self.desc, fun=fun))
+        for i in self.aggregators:
+            i.add_component(self.desc, fun)
         return fun
 
 class CompositeStatus(object):
     """Represents a composite status. TODO: rewrite to not use external lists"""
-    def composite_status(self, lst, lazy=True, **kwargs):
+    def __init__(self, *items):
+        self.items = items
+    def add_component(self, desc, fun):
+        self.items.append(dict(desc=desc, fun=fun))
+    def get_status(self, lazy=True, *args, **kwargs):
         status = True
-        for item in lst:
+        for item in self.items:
             desc, fun = item['desc'], item['fun']
             log.debug('    Querying %r (%r)...', desc, kwargs)
-            val = fun(self, **kwargs)
+            val = fun(self, *args, **kwargs)
             log.info('    %s => %s', desc, format_bool(val))
             status = status and val
             if lazy and not status:
