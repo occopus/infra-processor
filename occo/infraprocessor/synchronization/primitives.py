@@ -95,5 +95,10 @@ class SynchronizationProvider(ib.InfoProvider):
 
     @ib.provides('synch.site_available')
     def site_available(self, url, **kwargs):
-        response = util.do_request(url, 'head', **kwargs)
-        return response.success
+        try:
+            response = util.do_request(url, 'head', **kwargs)
+        except (util.HTTPTimeout, util.HTTPError) as ex:
+            log.warning('Error accessing [%s]: %s', url, ex)
+            return False
+        else:
+            return response.success
