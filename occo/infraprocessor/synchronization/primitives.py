@@ -15,7 +15,8 @@ These primitives are exposed through a the InfoBroker system.
 
 from __future__ import absolute_import
 
-__all__ = ['SynchronizationProvider', 'CompositeStatus', 'status_component', 'StatusTag']
+__all__ = ['SynchronizationProvider', 'CompositeStatus', 'status_component',
+           'StatusTag']
 
 import logging
 import occo.util as util
@@ -26,11 +27,23 @@ log = logging.getLogger('occo.infraprocessor.synchronization')
 def format_bool(b):
     return 'OK' if b else 'PENDING'
 
+class StatusItem(object):
+    def __init__(self, description, fun):
+        self.desc, self.fun = description, fun
+
+    def evaluate(self, fun_self, *args, **kwargs):
+        log.debug('    Querying %r (%r, %r)...',
+                  self.desc, args, kwargs)
+        val = self.fun(fun_self, *args, **kwargs)
+        log.info('    %s => %s', self.desc, format_bool(val))
+        return val
+
 class StatusTag(object):
-    def __init__(self):
-        self.items = list()
+    """ Status components can be gathered in a tag object. """
+    def __init__(self, name):
+        self.items, self.name = list(), name
     def add_component(self, desc, fun):
-        self.items.append(dict(desc=desc, fun=fun))
+        self.items.append(StatusItem(desc, fun))
 
 class status_component(object):
     """ Decorator to gather status components. """
@@ -44,17 +57,15 @@ class status_component(object):
 class CompositeStatus(object):
     """Represents a composite status. """
     def get_composite_status(self, tag, lazy=True, *args, **kwargs):
-        status = True
-        for item in tag.items:
-            desc, fun = item['desc'], item['fun']
-            log.debug('    Querying %r (%r)...', desc, kwargs)
-            val = fun(self, *args, **kwargs)
-            log.info('    %s => %s', desc, format_bool(val))
-            status = status and val
-            if lazy and not status:
-                log.debug('    Lazy evaluation: skipping remaining items.')
-                break
-        log.info('Status: %s', format_bool(status))
+        log.debug('Evaluating status of %r', tag.name)
+
+        results = (item.evaluate(self, *args, **kwargs) for item in tag.items)
+        if not lazy:
+            # list() force-evaluates all items
+            results = list(results)
+
+        status = all(results)
+        log.info('Status of %r: %s', tag.name, format_bool(status))
         return status
 
 @ib.provider
