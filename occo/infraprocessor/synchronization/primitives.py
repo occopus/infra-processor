@@ -15,7 +15,7 @@ These primitives are exposed through a the InfoBroker system.
 
 from __future__ import absolute_import
 
-__all__ = ['SynchronizationProvider', 'CompositeStatus', 'status_component']
+__all__ = ['SynchronizationProvider', 'CompositeStatus', 'status_component', 'StatusTag']
 
 import logging
 import occo.util as util
@@ -26,24 +26,26 @@ log = logging.getLogger('occo.infraprocessor.synchronization')
 def format_bool(b):
     return 'OK' if b else 'PENDING'
 
+class StatusTag(object):
+    def __init__(self):
+        self.items = list()
+    def add_component(self, desc, fun):
+        self.items.append(dict(desc=desc, fun=fun))
+
 class status_component(object):
     """ Decorator to gather status components. """
-    def __init__(self, description, *aggregators):
-        self.aggregators, self.desc = aggregators, description
+    def __init__(self, description, *tags):
+        self.tags, self.desc = tags, description
     def __call__(self, fun):
-        for i in self.aggregators:
+        for i in self.tags:
             i.add_component(self.desc, fun)
         return fun
 
 class CompositeStatus(object):
-    """Represents a composite status. TODO: rewrite to not use external lists"""
-    def __init__(self, *items):
-        self.items = list(items)
-    def add_component(self, desc, fun):
-        self.items.append(dict(desc=desc, fun=fun))
-    def get_status(self, lazy=True, *args, **kwargs):
+    """Represents a composite status. """
+    def get_composite_status(self, tag, lazy=True, *args, **kwargs):
         status = True
-        for item in self.items:
+        for item in tag.items:
             desc, fun = item['desc'], item['fun']
             log.debug('    Querying %r (%r)...', desc, kwargs)
             val = fun(self, *args, **kwargs)
