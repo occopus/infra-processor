@@ -68,6 +68,11 @@ class CompositeStatus(object):
         log.info('Status of %r: %s', tag.name, format_bool(status))
         return status
 
+    def get_detailed_status(self, tag, *args, **kwargs):
+        log.debug('Evaluating status of %r', tag.name)
+        return list(item.evaluate(self, *args, **kwargs) for item in tag.items)
+
+
 @ib.provider
 class SynchronizationProvider(ib.InfoProvider):
     @ib.provides('node.address')
