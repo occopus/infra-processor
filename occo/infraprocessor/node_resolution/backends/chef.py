@@ -162,16 +162,3 @@ class ChefCloudinitResolver(Resolver):
             node, node_definition, template_data)
         node_definition['synch_attrs'] = \
             self.extract_synch_attrs(node)
-
-@factory.register(Resolver, 'cooked')
-class IdentityResolver(Resolver):
-    """
-    Implementation of :class:`Resolver` for implementations already resolved.
-
-    This resolver returns the node_definition as-is.
-    """
-    def resolve_node(self, node_definition):
-        """
-        Implementation of :meth:`Resolver.resolve_node`.
-        """
-        pass
