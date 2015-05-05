@@ -73,8 +73,7 @@ class SynchronizationProvider(ib.InfoProvider):
     @ib.provides('node.address')
     def get_server_address(self, **node_spec):
         inst = ib.main_info_broker.get('node.find_one', **node_spec)
-        return ib.main_info_broker.get(
-            'node.cloud_attribute', 'ipaddress', inst)
+        return ib.main_info_broker.get('node.resource.address', inst)
 
     @ib.provides('synch.node_reachable')
     @ib.provides('node.network_reachable')

@@ -109,9 +109,10 @@ class CreateNode(Command):
             node['environment_id'], node['name'], instance_data)
 
         log.info(
-            "Node %s/%s/%s received IP address: %r",
+            "Node %s/%s/%s received address: %r (%s)",
             node['environment_id'], node['name'], node_id,
-            ib.get('node.cloud_attribute', 'ipaddress', instance_data))
+            ib.get('node.resource.address', instance_data),
+            ib.get('node.resource.ip_address', instance_data))
 
         from occo.infraprocessor.synchronization import wait_for_node
 
