@@ -116,7 +116,7 @@ class ChefCloudinitResolver(Resolver):
 
         def find_node_id(node_name):
             nodes = main_info_broker.get(
-                'node.find', node['environment_id'], node_name)
+                'node.find', infra_id=node['environment_id'], name=node_name)
             if not nodes:
                 raise KeyError(
                     'No node exists with the given name', node_name)
@@ -162,16 +162,3 @@ class ChefCloudinitResolver(Resolver):
             node, node_definition, template_data)
         node_definition['synch_attrs'] = \
             self.extract_synch_attrs(node)
-
-@factory.register(Resolver, 'cooked')
-class IdentityResolver(Resolver):
-    """
-    Implementation of :class:`Resolver` for implementations already resolved.
-
-    This resolver returns the node_definition as-is.
-    """
-    def resolve_node(self, node_definition):
-        """
-        Implementation of :meth:`Resolver.resolve_node`.
-        """
-        pass

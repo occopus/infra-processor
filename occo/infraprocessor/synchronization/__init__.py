@@ -103,6 +103,7 @@ class NodeSynchStrategy(factory.MultiBackend):
         import occo.infobroker
         self.ib = occo.infobroker.main_info_broker
         self.node_id = instance_data['node_id']
+        self.infra_id = resolved_node_definition['environment_id']
 
     def is_ready(self):
         raise NotImplementedError()
