@@ -38,7 +38,7 @@ def sleep(timeout, cancel_event):
     return True
 
 def node_synch_type(resolved_node_definition):
-    stype_specified = util.coalesce(
+    return util.coalesce(
         # Can be specified by the node definition (implementation).
         # A node definition based on legacy material can even define an ad-hoc
         # strategy for that sole node type:
@@ -47,10 +47,6 @@ def node_synch_type(resolved_node_definition):
         resolved_node_definition.get('implementation_type'),
         # Default strategy:
         'basic')
-    if not NodeSynchStrategy.has_backend(synch_type):
-        return 'basic'
-    else:
-        return stype_specified
 
 def wait_for_node(node_description,
                   resolved_node_definition,
