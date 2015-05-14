@@ -72,6 +72,11 @@ class CompositeStatus(object):
         log.debug('Evaluating status of %r', tag.name)
         return list(item.evaluate(self, *args, **kwargs) for item in tag.items)
 
+    def get_report(self, tag, *args, **kwargs):
+        log.debug('Evaluating status of %r', tag.name)
+        return list((item.desc,
+                     item.evaluate(self, *args, **kwargs))
+                    for item in tag.items)
 
 @ib.provider
 class SynchronizationProvider(ib.InfoProvider):
