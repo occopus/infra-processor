@@ -15,7 +15,8 @@ definition can choose.
 
 __import__('pkg_resources').declare_namespace(__name__)
 
-__all__ = ['wait_for_node', 'NodeSynchStrategy', 'NodeSynchTimeout']
+__all__ = ['wait_for_node', 'NodeSynchStrategy', 'NodeSynchTimeout',
+           'node_synch_type']
 
 import logging
 import occo.util as util
@@ -35,6 +36,21 @@ def sleep(timeout, cancel_event):
     else:
         time.sleep(timeout)
     return True
+
+def node_synch_type(resolved_node_definition):
+    stype_specified = util.coalesce(
+        # Can be specified by the node definition (implementation).
+        # A node definition based on legacy material can even define an ad-hoc
+        # strategy for that sole node type:
+        resolved_node_definition.get('synch_strategy'),
+        # There can be a generic strategy for a node implementation type:
+        resolved_node_definition.get('implementation_type'),
+        # Default strategy:
+        'basic')
+    if not NodeSynchStrategy.has_backend(synch_type):
+        return 'basic'
+    else:
+        return stype_specified
 
 def wait_for_node(node_description,
                   resolved_node_definition,
@@ -61,17 +77,7 @@ def wait_for_node(node_description,
     :param cancel_event: The polling will be cancelled when this event is set.
     :type cancel_event: :class:`threading.Event`
     """
-    synch_type = util.coalesce(
-        # Can be specified by the node definition (implementation).
-        # A node definition based on legacy material can even define an ad-hoc
-        # strategy for that sole node type:
-        resolved_node_definition.get('synch_strategy'),
-        # There can be a generic strategy for a node implementation type:
-        resolved_node_definition.get('implementation_type'),
-        # Default strategy:
-        'basic')
-    if not NodeSynchStrategy.has_backend(synch_type):
-        synch_type = 'basic'
+    synch_type = node_synch_type(resolved_node_definition)
 
     synch = NodeSynchStrategy.instantiate(
         synch_type, node_description,
