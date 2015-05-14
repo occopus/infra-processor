@@ -116,7 +116,9 @@ class SynchronizationProvider(ib.InfoProvider):
     def node_state_report(self, instance_data):
         from ..synchronization import get_synch_strategy
         strategy = get_synch_strategy(instance_data)
-        return strategy.generate_report()
+        report = strategy.generate_report()
+        return dict(ready=all(r[1] for r in report),
+                    details=report)
 
     def get_instance_reports(self, instances):
         return dict(
@@ -132,10 +134,12 @@ class SynchronizationProvider(ib.InfoProvider):
         dynamic_state = \
             ib.main_info_broker.get('infrastructure.state', infra_id)
 
-        return dict(
+        details = dict(
             (
                 node_name,
                 self.get_instance_reports(instances)
             )
             for node_name, instances in dynamic_state.iteritems()
         )
+        ready = all(i['ready'] for j in details.itervalues() for i in j.itervalues())
+        return dict(details=details, ready=ready)
