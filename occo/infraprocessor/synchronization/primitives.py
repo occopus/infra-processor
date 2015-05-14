@@ -118,7 +118,7 @@ class SynchronizationProvider(ib.InfoProvider):
         strategy = get_synch_strategy(instance_data)
         return strategy.generate_report()
 
-    def get_instance_reports(instances):
+    def get_instance_reports(self, instances):
         return dict(
             (
                 node_id,
