@@ -21,6 +21,7 @@ __all__ = ['SynchronizationProvider', 'CompositeStatus', 'status_component',
 import logging
 import occo.util as util
 import occo.infobroker as ib
+import ..synchronization as synch
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 
@@ -111,3 +112,30 @@ class SynchronizationProvider(ib.InfoProvider):
             return False
         else:
             return response.success
+
+    @ib.provides('node.state_report')
+    def node_state_report(self, instance_data):
+        strategy = synch.get_synch_strategy(instance_data)
+        return strategy.generate_report()
+
+    def get_instance_reports(instances):
+        return dict(
+            (
+                node_id,
+                self.node_state_report(instance_data)
+            )
+            for node_id, instance_data in instances
+        )
+
+    @ib.provides('infrastructure.state_report'):
+    def infra_state_report(self, infra_id):
+        dynamic_state = \
+            ib.main_info_broker.get('infrastructure.state', infra_id)
+
+        return dict(
+            (
+                node_name,
+                self.get_instance_reports(instances)
+            )
+            for node_name, instances in dynamic_state
+        )
