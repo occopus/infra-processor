@@ -48,10 +48,7 @@ def node_synch_type(resolved_node_definition):
         # Default strategy:
         'basic')
 
-def wait_for_node(node_description,
-                  resolved_node_definition,
-                  instance_data,
-                  infraprocessor,
+def wait_for_node(instance_data,
                   poll_delay=10, timeout=None, cancel_event=None):
     """
     Wait for the creation of the node using the appropriate
@@ -59,12 +56,7 @@ def wait_for_node(node_description,
 
     May raise an exception, if node creation fails (depending on synch type).
 
-    :param resolved_node_definition: The resolved node definition, serving as
-        contextual information.
     :param instance_data: Instance information.
-    :param infraprocessor: The InfrastructureProcessor calling this method.
-        Used for contextual information and to access OCCO facilities like the
-        CloudHandler.
     :param int poll_delay: Time (seconds) to wait between polls.
     :param int timeout: Timeout in seconds. If :data:`None` or 0, there will
         be no timeout. This is approximate timeout, the actual timeout will
@@ -73,11 +65,13 @@ def wait_for_node(node_description,
     :param cancel_event: The polling will be cancelled when this event is set.
     :type cancel_event: :class:`threading.Event`
     """
+    node_description = instance_data['node_description']
+    resolved_node_definition = instance_data['resolved_node_definition']
     synch_type = node_synch_type(resolved_node_definition)
 
     synch = NodeSynchStrategy.instantiate(
         synch_type, node_description,
-        resolved_node_definition, instance_data, infraprocessor)
+        resolved_node_definition, instance_data)
 
     node_id = resolved_node_definition['node_id']
     log.info('Waiting for node %r to become ready using %r strategy.',
@@ -96,12 +90,10 @@ class NodeSynchStrategy(factory.MultiBackend):
     def __init__(self,
                  node_description,
                  resolved_node_definition,
-                 instance_data,
-                 infraprocessor):
+                 instance_data):
         self.node_description = node_description
         self.resolved_node = resolved_node_definition
         self.instance_data = instance_data
-        self.infraprocessor = infraprocessor
         import occo.infobroker
         self.ib = occo.infobroker.main_info_broker
         self.node_id = instance_data['node_id']

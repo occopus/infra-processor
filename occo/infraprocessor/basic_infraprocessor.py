@@ -95,12 +95,18 @@ class CreateNode(Command):
         infraprocessor.servicecomposer.register_node(resolved_node)
         instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
 
+        import occo.infraprocessor.synchronization as synch
+
         # Information specifying a running node instance
         # See: :ref:`instancedata`.
-        instance_data = dict(node_id=node_id,
-                             backend_id=resolved_node['backend_id'],
-                             user_id=node['user_id'],
-                             instance_id=instance_id)
+        instance_data = dict(
+            node_id=node_id,
+            backend_id=resolved_node['backend_id'],
+            user_id=node['user_id'],
+            instance_id=instance_id,
+            node_description=node,
+            resolved_node_definition=resolved_node,
+        )
 
         # Although all information can be extraced from the system dynamically,
         # we keep an internal record on the state of the infrastructure for
@@ -114,12 +120,10 @@ class CreateNode(Command):
             ib.get('node.resource.address', instance_data),
             ib.get('node.resource.ip_address', instance_data))
 
-        from occo.infraprocessor.synchronization import wait_for_node
 
         try:
             # TODO Add timeout
-            wait_for_node(node, resolved_node, instance_data, infraprocessor,
-                          infraprocessor.poll_delay)
+            synch.wait_for_node(instance_data, infraprocessor.poll_delay)
         #TODO Handle other errors
         except Exception:
             log.exception('Unhandled exception when waiting for node:')
