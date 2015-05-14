@@ -124,7 +124,7 @@ class SynchronizationProvider(ib.InfoProvider):
                 node_id,
                 self.node_state_report(instance_data)
             )
-            for node_id, instance_data in instances
+            for node_id, instance_data in instances.iteritems()
         )
 
     @ib.provides('infrastructure.state_report')
@@ -137,5 +137,5 @@ class SynchronizationProvider(ib.InfoProvider):
                 node_name,
                 self.get_instance_reports(instances)
             )
-            for node_name, instances in dynamic_state
+            for node_name, instances in dynamic_state.iteritems()
         )
