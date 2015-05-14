@@ -16,7 +16,7 @@ definition can choose.
 __import__('pkg_resources').declare_namespace(__name__)
 
 __all__ = ['wait_for_node', 'NodeSynchStrategy', 'NodeSynchTimeout',
-           'node_synch_type']
+           'node_synch_type', 'get_synch_strategy']
 
 import logging
 import occo.util as util
@@ -48,6 +48,18 @@ def node_synch_type(resolved_node_definition):
         # Default strategy:
         'basic')
 
+def get_synch_strategy(instance_data):
+    node_description = instance_data['node_description']
+    resolved_node_definition = instance_data['resolved_node_definition']
+    synch_type = node_synch_type(resolved_node_definition)
+    log.info('Synchronization strategy for node %r is %r.',
+             instance_data['node_id'], synch_type)
+
+    return NodeSynchStrategy.instantiate(
+        synch_type, node_description,
+        resolved_node_definition, instance_data)
+
+
 def wait_for_node(instance_data,
                   poll_delay=10, timeout=None, cancel_event=None):
     """
@@ -65,17 +77,10 @@ def wait_for_node(instance_data,
     :param cancel_event: The polling will be cancelled when this event is set.
     :type cancel_event: :class:`threading.Event`
     """
-    node_description = instance_data['node_description']
-    resolved_node_definition = instance_data['resolved_node_definition']
-    synch_type = node_synch_type(resolved_node_definition)
+    synch = get_synch_strategy(instance_data)
 
-    synch = NodeSynchStrategy.instantiate(
-        synch_type, node_description,
-        resolved_node_definition, instance_data)
-
-    node_id = resolved_node_definition['node_id']
-    log.info('Waiting for node %r to become ready using %r strategy.',
-             node_id, synch_type)
+    node_id = instance_data['node_id']
+    log.info('Waiting for node %r to become ready.', node_id)
 
     while not synch.is_ready():
         log.debug('Node %r is not ready, waiting %r seconds.',
