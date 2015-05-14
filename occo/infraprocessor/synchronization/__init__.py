@@ -104,6 +104,9 @@ class NodeSynchStrategy(factory.MultiBackend):
         self.node_id = instance_data['node_id']
         self.infra_id = resolved_node_definition['environment_id']
 
+    def generate_report(self):
+        raise NotImplementedError()
+
     def is_ready(self):
         raise NotImplementedError()
 
@@ -113,6 +116,10 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
         return \
             self.status_ready() \
             and self.attributes_ready()
+
+    def generate_report(self):
+        return [('Node status', self.status_ready()),
+                ('Attributes ready', self.attributes_ready())]
 
     def status_ready(self):
         log.debug('Checking node status for %r', self.node_id)
