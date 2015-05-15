@@ -22,6 +22,7 @@ setuptools.setup(
     install_requires=['argparse',
                       'PyYAML',
                       'python-dateutil',
+                      'Jinja2',
                       'OCCO-Util',
                       'OCCO-InfoBroker'],
 )
