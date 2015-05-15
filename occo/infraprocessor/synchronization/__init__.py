@@ -13,8 +13,6 @@ definition can choose.
 
 """
 
-__import__('pkg_resources').declare_namespace(__name__)
-
 __all__ = ['wait_for_node', 'NodeSynchStrategy', 'NodeSynchTimeout',
            'node_synch_type', 'get_synch_strategy']
 
