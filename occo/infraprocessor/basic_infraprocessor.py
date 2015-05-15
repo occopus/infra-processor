@@ -13,10 +13,10 @@ __all__ = ['BasicInfraProcessor',
 import logging
 import occo.util.factory as factory
 import occo.infobroker as ib
-from node_resolution import resolve_node
+from occo.infraprocessor.node_resolution.resolution import resolve_node
 import uuid
 import yaml
-from occo.infraprocessor import InfraProcessor, Command
+from occo.infraprocessor.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
 
 log = logging.getLogger('occo.infraprocessor.basic')

@@ -18,8 +18,9 @@ __all__ = ['RemoteInfraProcessor', 'RemoteInfraProcessorSkeleton',
 import logging
 import occo.util.communication as comm
 import occo.util.factory as factory
-from occo.infraprocessor import \
-    Strategy, Command, BasicInfraProcessor, InfraProcessor
+from occo.infraprocessor.strategy import Strategy
+from occo.infraprocessor.basic_infraprocessor \
+    import Command, BasicInfraProcessor, InfraProcessor
 import time
 
 log = logging.getLogger('occo.infraprocessor.remote')

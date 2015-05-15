@@ -17,7 +17,7 @@ import occo.util as util
 import occo.util.factory as factory
 import yaml
 import jinja2
-from ...node_resolution import Resolver
+from ..resolution import Resolver
 
 log = logging.getLogger('occo.infraprocessor.node_resolution.chef')
 

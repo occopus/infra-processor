@@ -9,8 +9,7 @@ import occo.util as util
 import logging
 import logging.config
 
-with open(util.rel_to_file('test.yaml')) as f:
-    cfg = config.DefaultYAMLConfig(f)
+cfg = config.DefaultYAMLConfig(util.rel_to_file('test.yaml'))
 
 logging.config.dictConfig(cfg.logging)
 
