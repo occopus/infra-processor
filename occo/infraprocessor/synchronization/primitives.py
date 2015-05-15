@@ -72,6 +72,11 @@ class CompositeStatus(object):
         log.debug('Evaluating status of %r', tag.name)
         return list(item.evaluate(self, *args, **kwargs) for item in tag.items)
 
+    def get_report(self, tag, *args, **kwargs):
+        log.debug('Evaluating status of %r', tag.name)
+        return list((item.desc,
+                     item.evaluate(self, *args, **kwargs))
+                    for item in tag.items)
 
 @ib.provider
 class SynchronizationProvider(ib.InfoProvider):
@@ -106,3 +111,35 @@ class SynchronizationProvider(ib.InfoProvider):
             return False
         else:
             return response.success
+
+    @ib.provides('node.state_report')
+    def node_state_report(self, instance_data):
+        from ..synchronization import get_synch_strategy
+        strategy = get_synch_strategy(instance_data)
+        report = strategy.generate_report()
+        return dict(ready=all(r[1] for r in report),
+                    details=report)
+
+    def get_instance_reports(self, instances):
+        return dict(
+            (
+                node_id,
+                self.node_state_report(instance_data)
+            )
+            for node_id, instance_data in instances.iteritems()
+        )
+
+    @ib.provides('infrastructure.state_report')
+    def infra_state_report(self, infra_id):
+        dynamic_state = \
+            ib.main_info_broker.get('infrastructure.state', infra_id)
+
+        details = dict(
+            (
+                node_name,
+                self.get_instance_reports(instances)
+            )
+            for node_name, instances in dynamic_state.iteritems()
+        )
+        ready = all(i['ready'] for j in details.itervalues() for i in j.itervalues())
+        return dict(details=details, ready=ready)

@@ -15,7 +15,8 @@ definition can choose.
 
 __import__('pkg_resources').declare_namespace(__name__)
 
-__all__ = ['wait_for_node', 'NodeSynchStrategy', 'NodeSynchTimeout']
+__all__ = ['wait_for_node', 'NodeSynchStrategy', 'NodeSynchTimeout',
+           'node_synch_type', 'get_synch_strategy']
 
 import logging
 import occo.util as util
@@ -36,32 +37,8 @@ def sleep(timeout, cancel_event):
         time.sleep(timeout)
     return True
 
-def wait_for_node(node_description,
-                  resolved_node_definition,
-                  instance_data,
-                  infraprocessor,
-                  poll_delay=10, timeout=None, cancel_event=None):
-    """
-    Wait for the creation of the node using the appropriate
-    :class:`NodeSynchStrategy`.
-
-    May raise an exception, if node creation fails (depending on synch type).
-
-    :param resolved_node_definition: The resolved node definition, serving as
-        contextual information.
-    :param instance_data: Instance information.
-    :param infraprocessor: The InfrastructureProcessor calling this method.
-        Used for contextual information and to access OCCO facilities like the
-        CloudHandler.
-    :param int poll_delay: Time (seconds) to wait between polls.
-    :param int timeout: Timeout in seconds. If :data:`None` or 0, there will
-        be no timeout. This is approximate timeout, the actual timeout will
-        happen somwhere between ``(start+timeout)`` and
-        ``(start+timeout+poll_delay)``.
-    :param cancel_event: The polling will be cancelled when this event is set.
-    :type cancel_event: :class:`threading.Event`
-    """
-    synch_type = util.coalesce(
+def node_synch_type(resolved_node_definition):
+    return util.coalesce(
         # Can be specified by the node definition (implementation).
         # A node definition based on legacy material can even define an ad-hoc
         # strategy for that sole node type:
@@ -70,16 +47,40 @@ def wait_for_node(node_description,
         resolved_node_definition.get('implementation_type'),
         # Default strategy:
         'basic')
-    if not NodeSynchStrategy.has_backend(synch_type):
-        synch_type = 'basic'
 
-    synch = NodeSynchStrategy.instantiate(
+def get_synch_strategy(instance_data):
+    node_description = instance_data['node_description']
+    resolved_node_definition = instance_data['resolved_node_definition']
+    synch_type = node_synch_type(resolved_node_definition)
+    log.info('Synchronization strategy for node %r is %r.',
+             instance_data['node_id'], synch_type)
+
+    return NodeSynchStrategy.instantiate(
         synch_type, node_description,
-        resolved_node_definition, instance_data, infraprocessor)
+        resolved_node_definition, instance_data)
 
-    node_id = resolved_node_definition['node_id']
-    log.info('Waiting for node %r to become ready using %r strategy.',
-             node_id, synch_type)
+
+def wait_for_node(instance_data,
+                  poll_delay=10, timeout=None, cancel_event=None):
+    """
+    Wait for the creation of the node using the appropriate
+    :class:`NodeSynchStrategy`.
+
+    May raise an exception, if node creation fails (depending on synch type).
+
+    :param instance_data: Instance information.
+    :param int poll_delay: Time (seconds) to wait between polls.
+    :param int timeout: Timeout in seconds. If :data:`None` or 0, there will
+        be no timeout. This is approximate timeout, the actual timeout will
+        happen somwhere between ``(start+timeout)`` and
+        ``(start+timeout+poll_delay)``.
+    :param cancel_event: The polling will be cancelled when this event is set.
+    :type cancel_event: :class:`threading.Event`
+    """
+    synch = get_synch_strategy(instance_data)
+
+    node_id = instance_data['node_id']
+    log.info('Waiting for node %r to become ready.', node_id)
 
     while not synch.is_ready():
         log.debug('Node %r is not ready, waiting %r seconds.',
@@ -94,16 +95,17 @@ class NodeSynchStrategy(factory.MultiBackend):
     def __init__(self,
                  node_description,
                  resolved_node_definition,
-                 instance_data,
-                 infraprocessor):
+                 instance_data):
         self.node_description = node_description
         self.resolved_node = resolved_node_definition
         self.instance_data = instance_data
-        self.infraprocessor = infraprocessor
         import occo.infobroker
         self.ib = occo.infobroker.main_info_broker
         self.node_id = instance_data['node_id']
         self.infra_id = resolved_node_definition['environment_id']
+
+    def generate_report(self):
+        raise NotImplementedError()
 
     def is_ready(self):
         raise NotImplementedError()
@@ -114,6 +116,10 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
         return \
             self.status_ready() \
             and self.attributes_ready()
+
+    def generate_report(self):
+        return [('Node status', self.status_ready()),
+                ('Attributes ready', self.attributes_ready())]
 
     def status_ready(self):
         log.debug('Checking node status for %r', self.node_id)

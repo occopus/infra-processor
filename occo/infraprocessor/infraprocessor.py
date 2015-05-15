@@ -119,7 +119,7 @@ class InfraProcessor(factory.MultiBackend):
         """ Create a primitive that will delete an infrastructure instance. """
         raise NotImplementedError()
 
-    def cancel_pending(self, deadline):
+    def cancel_pending(self, deadline=None):
         """
         Registers that commands up to a specific time should be considered
         cancelled.
@@ -128,5 +128,7 @@ class InfraProcessor(factory.MultiBackend):
             performing the commands that has been created before this time.
         :type deadline: :class:`int`, unix timestamp
         """
+        if deadline is None:
+            deadline = int(time.time())+1
         self.cancelled_until = deadline
         self.strategy.cancel_pending()
