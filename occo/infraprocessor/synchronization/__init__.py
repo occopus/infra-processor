@@ -127,6 +127,7 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
     def is_ready(self):
         return (
             self.status_ready()
+            and self.reachable()
             and self.attributes_ready()
             and self.urls_ready()
         )
@@ -163,6 +164,11 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
         import jinja2
         tmp = jinja2.Template(fmt)
         return tmp.render(data)
+
+    def reachable(self):
+        if self.get_kwargs().get('ping', False):
+            log.debug('Checking node reachability (%s)', self.node_id)
+            return self.ib.get('synch.node_reachable', **self.make_node_spec())
 
     def urls_ready(self):
         urls = self.get_kwargs().get('urls', list())
