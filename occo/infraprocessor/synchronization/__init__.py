@@ -44,7 +44,7 @@ def node_synch_type(resolved_node_definition):
         # The synch strategy may be parameterizable (like 'basic' is)
         key = synchstrat['protocol'] \
             if isinstance(synchstrat, dict) \
-            else synchstart
+            else synchstrat
         if not NodeSynchStrategy.has_backend(key):
             # If specified, but unknown, that is an error (typo or misconfig.)
             raise ValueError('Unknown synch_strategy', key)
