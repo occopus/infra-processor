@@ -162,7 +162,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
     @status_component('Network reachability', basic_status)
     def reachable(self):
-        if self.get_kwargs().get('ping', False):
+        if self.get_kwargs().get('ping', True):
             log.debug('Checking node reachability (%s)', self.node_id)
             return self.ib.get('synch.node_reachable', **self.make_node_spec())
 
