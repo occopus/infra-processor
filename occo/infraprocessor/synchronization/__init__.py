@@ -137,7 +137,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         return 'running:ready' == status
 
     def get_kwargs(self):
-        if not self.kwargs:
+        if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
                 'synch_strategy', dict())
         return self.kwargs
