@@ -148,7 +148,16 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
         return self.kwargs
 
     def resolve_url(self, fmt):
-        return fmt
+        data = dict(node_id=self.instance_data['node_id'],
+                    ibget=self.ib.get,
+                    instance_data=self.instance_data,
+                    variables=self.node_description['variables'])
+        data['addr'] = self.ib.get('node.address',
+                                   infra_id=self.node_description['infra_id'],
+                                   node_id=self.node_id)
+        import jinja2
+        tmp = jinja2.Template(fmt)
+        return tmp.render(data)
 
     def urls_ready(self):
         urls = self.get_kwargs().get('urls', list())
