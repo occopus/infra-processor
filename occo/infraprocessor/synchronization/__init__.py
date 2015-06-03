@@ -36,15 +36,24 @@ def sleep(timeout, cancel_event):
     return True
 
 def node_synch_type(resolved_node_definition):
-    return util.coalesce(
-        # Can be specified by the node definition (implementation).
-        # A node definition based on legacy material can even define an ad-hoc
-        # strategy for that sole node type:
-        resolved_node_definition.get('synch_strategy'),
-        # There can be a generic strategy for a node implementation type:
-        resolved_node_definition.get('implementation_type'),
-        # Default strategy:
-        'basic')
+    # Can be specified by the node definition (implementation).
+    # A node definition based on legacy material can even define an ad-hoc
+    # strategy for that sole node type:
+    key = resolved_node_definition.get('synch_strategy')
+    if key and not NodeSynchStrategy.has_backend(key):
+        # If specified, but unknown, that is an error (typo or misconfig.)
+        raise ValueError('Unknown synch_strategy', key)
+
+    if not key:
+        # No special synch strategy has been defined.
+        # Trying a generic synch strategy for the implementation type
+        key = resolved_node_definition.get('implementation_type'),
+        if not NodeSynchStrategy.has_backend(key):
+            # There is no generic synch strategy for the implementation type
+            # Using default synch strategy
+            key = 'basic'
+
+    return key
 
 def get_synch_strategy(instance_data):
     node_description = instance_data['node_description']
