@@ -39,10 +39,15 @@ def node_synch_type(resolved_node_definition):
     # Can be specified by the node definition (implementation).
     # A node definition based on legacy material can even define an ad-hoc
     # strategy for that sole node type:
-    key = resolved_node_definition.get('synch_strategy')
-    if key and not NodeSynchStrategy.has_backend(key):
-        # If specified, but unknown, that is an error (typo or misconfig.)
-        raise ValueError('Unknown synch_strategy', key)
+    synchstrat = resolved_node_definition.get('synch_strategy')
+    if synchstrat:
+        # The synch strategy may be parameterizable (like 'basic' is)
+        key = synchstrat['protocol'] \
+            if isinstance(synchstrat, dict) \
+            else synchstart
+        if not NodeSynchStrategy.has_backend(key):
+            # If specified, but unknown, that is an error (typo or misconfig.)
+            raise ValueError('Unknown synch_strategy', key)
 
     if not key:
         # No special synch strategy has been defined.
