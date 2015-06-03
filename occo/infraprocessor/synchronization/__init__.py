@@ -185,7 +185,7 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
         return True
 
     def attributes_ready(self):
-        synch_attrs = self.resolved_node['synch_attrs']
+        synch_attrs = self.resolved_node.get('synch_attrs')
         if not synch_attrs:
             # Nothing to synchronize upon
             return True
