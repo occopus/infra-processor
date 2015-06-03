@@ -48,8 +48,7 @@ def node_synch_type(resolved_node_definition):
         if not NodeSynchStrategy.has_backend(key):
             # If specified, but unknown, that is an error (typo or misconfig.)
             raise ValueError('Unknown synch_strategy', key)
-
-    if not key:
+    else:
         # No special synch strategy has been defined.
         # Trying a generic synch strategy for the implementation type
         key = resolved_node_definition.get('implementation_type'),
