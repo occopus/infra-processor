@@ -147,14 +147,19 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
                 'synch_strategy', dict())
         return self.kwargs
 
+    def make_node_spec(self):
+        return dict(infra_id=self.infra_id, node_id=self.node_id)
+    def get_node_address(self):
+        return self.ib.get('node.address', **self.make_node_spec())
+
     def resolve_url(self, fmt):
-        data = dict(node_id=self.instance_data['node_id'],
-                    ibget=self.ib.get,
-                    instance_data=self.instance_data,
-                    variables=self.node_description['variables'])
-        data['addr'] = self.ib.get('node.address',
-                                   infra_id=self.node_description['infra_id'],
-                                   node_id=self.node_id)
+        data = dict(
+            node_id=self.instance_data['node_id'],
+            ibget=self.ib.get,
+            instance_data=self.instance_data,
+            variables=self.node_description['variables'],
+            addr = self.get_node_address(),
+        )
         import jinja2
         tmp = jinja2.Template(fmt)
         return tmp.render(data)
