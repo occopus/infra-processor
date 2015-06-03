@@ -125,9 +125,11 @@ class NodeSynchStrategy(factory.MultiBackend):
 @factory.register(NodeSynchStrategy, 'basic')
 class BasicNodeSynchStrategy(NodeSynchStrategy):
     def is_ready(self):
-        return \
-            self.status_ready() \
+        return (
+            self.status_ready()
             and self.attributes_ready()
+            and self.urls_ready()
+        )
 
     def generate_report(self):
         return [('Node status', self.status_ready()),
@@ -138,6 +140,29 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
         status = self.ib.get('node.state', self.instance_data)
         log.info('Status of node %r is %r', self.node_id, status)
         return 'running:ready' == status
+
+    def get_kwargs(self):
+        if not self.kwargs:
+            self.kwargs = self.resolved_node_definition.get(
+                'synch_strategy', dict())
+        return self.kwargs
+
+    def resolve_url(self, fmt):
+        return fmt
+
+    def urls_ready(self):
+        urls = self.get_kwargs().get('urls', list())
+        for fmt in urls:
+            log.debug('Checking URL availability: %r', i)
+            url = self.resolve_url(fmt)
+            available = self.ib.get('synch.site_available', url)
+            if not available:
+                log.info('Site %r is still not available.', url)
+                return False
+            else:
+                log.info('Site %r has become available.', url)
+
+        return True
 
     def attributes_ready(self):
         synch_attrs = self.resolved_node['synch_attrs']
