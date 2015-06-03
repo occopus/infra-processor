@@ -122,20 +122,15 @@ class NodeSynchStrategy(factory.MultiBackend):
     def is_ready(self):
         raise NotImplementedError()
 
+from occo.infraprocessor.synchronization.primitives import *
+basic_status = StatusTag('Generic status information')
+
 @factory.register(NodeSynchStrategy, 'basic')
-class BasicNodeSynchStrategy(NodeSynchStrategy):
+class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def is_ready(self):
-        return (
-            self.status_ready()
-            and self.reachable()
-            and self.attributes_ready()
-            and self.urls_ready()
-        )
+        return self.get_composite_status(basic_status)
 
-    def generate_report(self):
-        return [('Node status', self.status_ready()),
-                ('Attributes ready', self.attributes_ready())]
-
+    @status_component('Backend status', basic_status)
     def status_ready(self):
         log.debug('Checking node status for %r', self.node_id)
         status = self.ib.get('node.state', self.instance_data)
@@ -165,11 +160,13 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
         tmp = jinja2.Template(fmt)
         return tmp.render(data)
 
+    @status_component('Network reachability', basic_status)
     def reachable(self):
         if self.get_kwargs().get('ping', False):
             log.debug('Checking node reachability (%s)', self.node_id)
             return self.ib.get('synch.node_reachable', **self.make_node_spec())
 
+    @status_component('URL Availability', basic_status)
     def urls_ready(self):
         urls = self.get_kwargs().get('urls', list())
         for fmt in urls:
@@ -184,6 +181,7 @@ class BasicNodeSynchStrategy(NodeSynchStrategy):
 
         return True
 
+    @status_component('Attribute Availability', basic_status)
     def attributes_ready(self):
         synch_attrs = self.resolved_node.get('synch_attrs')
         if not synch_attrs:
