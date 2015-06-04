@@ -169,8 +169,8 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def urls_ready(self):
         urls = self.get_kwargs().get('urls', list())
         for fmt in urls:
-            log.debug('Checking URL availability: %r', i)
             url = self.resolve_url(fmt)
+            log.debug('Checking URL availability: %r', url)
             available = self.ib.get('synch.site_available', url)
             if not available:
                 log.info('Site %r is still not available.', url)
