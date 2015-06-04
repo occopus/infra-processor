@@ -108,7 +108,7 @@ class NodeSynchStrategy(factory.MultiBackend):
                  resolved_node_definition,
                  instance_data):
         self.node_description = node_description
-        self.resolved_node = resolved_node_definition
+        self.resolved_node_definition = resolved_node_definition
         self.instance_data = instance_data
         import occo.infobroker
         self.ib = occo.infobroker.main_info_broker
@@ -182,7 +182,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
     @status_component('Attribute Availability', basic_status)
     def attributes_ready(self):
-        synch_attrs = self.resolved_node.get('synch_attrs')
+        synch_attrs = self.resolved_node_definition.get('synch_attrs')
         if not synch_attrs:
             # Nothing to synchronize upon
             return True
