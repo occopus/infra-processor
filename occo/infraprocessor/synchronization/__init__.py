@@ -39,12 +39,16 @@ def node_synch_type(resolved_node_definition):
     # Can be specified by the node definition (implementation).
     # A node definition based on legacy material can even define an ad-hoc
     # strategy for that sole node type:
-    key = resolved_node_definition.get('synch_strategy')
-    if key and not NodeSynchStrategy.has_backend(key):
-        # If specified, but unknown, that is an error (typo or misconfig.)
-        raise ValueError('Unknown synch_strategy', key)
-
-    if not key:
+    synchstrat = resolved_node_definition.get('synch_strategy')
+    if synchstrat:
+        # The synch strategy may be parameterizable (like 'basic' is)
+        key = synchstrat['protocol'] \
+            if isinstance(synchstrat, dict) \
+            else synchstrat
+        if not NodeSynchStrategy.has_backend(key):
+            # If specified, but unknown, that is an error (typo or misconfig.)
+            raise ValueError('Unknown synch_strategy', key)
+    else:
         # No special synch strategy has been defined.
         # Trying a generic synch strategy for the implementation type
         key = resolved_node_definition.get('implementation_type'),
@@ -104,7 +108,7 @@ class NodeSynchStrategy(factory.MultiBackend):
                  resolved_node_definition,
                  instance_data):
         self.node_description = node_description
-        self.resolved_node = resolved_node_definition
+        self.resolved_node_definition = resolved_node_definition
         self.instance_data = instance_data
         import occo.infobroker
         self.ib = occo.infobroker.main_info_broker
@@ -117,25 +121,68 @@ class NodeSynchStrategy(factory.MultiBackend):
     def is_ready(self):
         raise NotImplementedError()
 
+from occo.infraprocessor.synchronization.primitives import *
+basic_status = StatusTag('Generic status information')
+
 @factory.register(NodeSynchStrategy, 'basic')
-class BasicNodeSynchStrategy(NodeSynchStrategy):
+class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def is_ready(self):
-        return \
-            self.status_ready() \
-            and self.attributes_ready()
+        return self.get_composite_status(basic_status)
 
-    def generate_report(self):
-        return [('Node status', self.status_ready()),
-                ('Attributes ready', self.attributes_ready())]
-
+    @status_component('Backend status', basic_status)
     def status_ready(self):
         log.debug('Checking node status for %r', self.node_id)
         status = self.ib.get('node.state', self.instance_data)
         log.info('Status of node %r is %r', self.node_id, status)
         return 'running:ready' == status
 
+    def get_kwargs(self):
+        if not hasattr(self, 'kwargs'):
+            self.kwargs = self.resolved_node_definition.get(
+                'synch_strategy', dict())
+        return self.kwargs
+
+    def make_node_spec(self):
+        return dict(infra_id=self.infra_id, node_id=self.node_id)
+    def get_node_address(self):
+        return self.ib.get('node.address', **self.make_node_spec())
+
+    def resolve_url(self, fmt):
+        data = dict(
+            node_id=self.instance_data['node_id'],
+            ibget=self.ib.get,
+            instance_data=self.instance_data,
+            variables=self.node_description['variables'],
+            addr=self.get_node_address(),
+        )
+        import jinja2
+        tmp = jinja2.Template(fmt)
+        return tmp.render(data)
+
+    @status_component('Network reachability', basic_status)
+    def reachable(self):
+        if self.get_kwargs().get('ping', True):
+            log.debug('Checking node reachability (%s)', self.node_id)
+            return self.ib.get('synch.node_reachable', **self.make_node_spec())
+
+    @status_component('URL Availability', basic_status)
+    def urls_ready(self):
+        urls = self.get_kwargs().get('urls', list())
+        for fmt in urls:
+            url = self.resolve_url(fmt)
+            log.debug('Checking URL availability: %r', url)
+            available = self.ib.get('synch.site_available', url)
+            if not available:
+                log.info('Site %r is still not available.', url)
+                return False
+            else:
+                log.info('Site %r has become available.', url)
+
+        return True
+
+    @status_component('Attribute Availability', basic_status)
     def attributes_ready(self):
-        synch_attrs = self.resolved_node['synch_attrs']
+        synch_attrs = self.resolved_node_definition.get('synch_attrs')
         if not synch_attrs:
             # Nothing to synchronize upon
             return True
