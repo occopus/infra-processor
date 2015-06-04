@@ -153,7 +153,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
             ibget=self.ib.get,
             instance_data=self.instance_data,
             variables=self.node_description['variables'],
-            addr = self.get_node_address(),
+            addr=self.get_node_address(),
         )
         import jinja2
         tmp = jinja2.Template(fmt)
