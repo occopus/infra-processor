@@ -2,7 +2,7 @@ autoimport: !python_import
     - occo.infraprocessor.remote_infraprocessor
 default_mqconfig: &MQCFG
     protocol: amqp
-    host: c153-33.localcloud
+    host: localhost
     vhost: test
     exhange: ''
     routing_key: ''
