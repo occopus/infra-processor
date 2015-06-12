@@ -13,6 +13,7 @@
 
 import logging
 import occo.util.factory as factory
+from occo.infraprocessor.strategy import Strategy
 import time
 
 log = logging.getLogger('occo.infraprocessor')
@@ -53,7 +54,7 @@ class InfraProcessor(factory.MultiBackend):
     .. automethod:: __enter__
     """
     def __init__(self, process_strategy):
-        self.strategy = process_strategy
+        self.strategy = Strategy.from_config(process_strategy)
         self.cancelled_until = 0
 
     def __enter__(self):

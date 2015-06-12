@@ -201,7 +201,7 @@ class BasicInfraProcessor(InfraProcessor):
                  poll_delay=10,
                  **config):
         super(BasicInfraProcessor, self).__init__(
-                process_strategy=Strategy.instantiate(process_strategy))
+            process_strategy=process_strategy)
         self.__dict__.update(config)
         self.ib = ib.main_info_broker
         self.uds = user_data_store
