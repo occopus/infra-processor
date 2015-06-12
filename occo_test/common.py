@@ -20,15 +20,23 @@ def uid():
     return str(uuid.uuid4())
 
 dummydata = {
+    'backends.auth_data' : {
+    },
+    'service_composer.aux_data' : {
+    },
     'node.definition' : {
-        'implementation_type' : 'cooked'
+        'implementation_type': 'chef+cloudinit',
+        'service_composer_id' : 'none',
+        'backend_id': 'none'
     }
 }
 
 class DummyNode(dict):
     def __init__(self, environment_id, force_id=None):
         self['environment_id'] = environment_id
+        self['user_id'] = 0
         self['type'] = 'dummynode'
+        self['name'] = 'dummynode'
         if force_id:
             self['node_id'] = force_id
         self._started = False

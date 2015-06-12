@@ -8,6 +8,7 @@ import unittest
 from common import *
 import occo.infraprocessor.basic_infraprocessor
 import occo.infraprocessor.infraprocessor as ip
+import occo.infraprocessor.node_resolution.backends.chef
 import occo.util as util
 import threading
 import occo.util.factory as factory
