@@ -35,17 +35,19 @@ class LocalTest(unittest.TestCase):
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
         infrap.push_instructions(cmd_crn)
-        self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node.id))
+        self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node['id']))
     def test_drop_node(self):
         infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
         eid = uid()
         node = DummyNode(eid)
+        print node.items()
+        print node['environment_id']
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
         infrap.push_instructions(cmd_crn)
-        cmd_rmn = infrap.cri_drop_node(node.id)
+        cmd_rmn = infrap.cri_drop_node(node['id'])
         infrap.push_instructions(cmd_rmn)
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
     def test_drop_environment(self):
@@ -57,7 +59,7 @@ class LocalTest(unittest.TestCase):
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
         infrap.push_instructions(cmd_crn)
-        cmd_rmn = infrap.cri_drop_node(node.id)
+        cmd_rmn = infrap.cri_drop_node(node['id'])
         cmd_rme = infrap.cri_drop_environment(eid)
         infrap.push_instructions(cmd_rmn)
         infrap.push_instructions(cmd_rme)

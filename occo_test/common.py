@@ -26,19 +26,17 @@ dummydata = {
 }
 
 class DummyNode(dict):
-    def __init__(self, environment_id):
+    def __init__(self, environment_id, force_id=None):
         self['environment_id'] = environment_id
         self['type'] = 'dummynode'
-        self.id = uid()
+        if force_id:
+            self['id'] = force_id
         self._started = False
-    @property
-    def environment_id(self):
-        return self['environment_id']
     @property
     def started(self):
         return self._started
     def __repr__(self):
-        return '%s_%r'%(self.id, self.started)
+        return '%s_%r'%(self['id'], self.started)
 
 class DummyInfoBroker(object):
     def __init__(self, main_info_broker=False):
@@ -60,16 +58,16 @@ class DummyServiceComposer(object):
         self.ib = infobroker
     def register_node(self, node):
         log.debug("[SC] Registering node: %r", node)
-        self.ib.environments[node.environment_id].append(node)
-        self.ib.node_lookup[node.id] = node
+        self.ib.environments[node['environment_id']].append(node)
+        self.ib.node_lookup[node['id']] = node
         log.debug("[SC] Done - '%r'", self.ib)
     def drop_node(self, node_id):
         log.debug("[SC] Dropping node '%s'", node_id)
         node = self.ib.node_lookup[node_id]
-        env_id = node.environment_id
+        env_id = node['environment_id']
         self.ib.environments[env_id] = list(
             i for i in self.ib.environments[env_id]
-            if i.id != node_id)
+            if i['id'] != node_id)
         del self.ib.node_lookup[node_id]
         log.debug("[SC] Done - '%r'", self.ib)
 

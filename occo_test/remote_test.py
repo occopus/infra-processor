@@ -68,7 +68,7 @@ class RemoteTest(unittest.TestCase):
         consumer.start()
         time.sleep(1)
         event.set()
-        self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node.id))
+        self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node['id']))
     def test_drop_node(self):
         event = th.Event()
         infrap = ip.InfraProcessor.instantiate(
@@ -81,7 +81,7 @@ class RemoteTest(unittest.TestCase):
         node = DummyNode(eid)
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
-        cmd_rmn = infrap.cri_drop_node(node.id)
+        cmd_rmn = infrap.cri_drop_node(node['id'])
         with stub:
             stub.push_instructions(cmd_cre)
             stub.push_instructions(cmd_crn)
@@ -109,7 +109,7 @@ class RemoteTest(unittest.TestCase):
         node = DummyNode(eid)
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
-        cmd_rmn = infrap.cri_drop_node(node.id)
+        cmd_rmn = infrap.cri_drop_node(node['id'])
         cmd_rme = infrap.cri_drop_environment(eid)
         with stub:
             stub.push_instructions(cmd_cre)
