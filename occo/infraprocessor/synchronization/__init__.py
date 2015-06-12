@@ -134,6 +134,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         log.debug('Checking node status for %r', self.node_id)
         status = self.ib.get('node.state', self.instance_data)
         log.info('Status of node %r is %r', self.node_id, status)
+        # TODO: standardize status
         return 'running:ready' == status
 
     def get_kwargs(self):
@@ -164,6 +165,9 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         if self.get_kwargs().get('ping', True):
             log.debug('Checking node reachability (%s)', self.node_id)
             return self.ib.get('synch.node_reachable', **self.make_node_spec())
+        else:
+            log.debug('Skipping.')
+            return True
 
     @status_component('URL Availability', basic_status)
     def urls_ready(self):
