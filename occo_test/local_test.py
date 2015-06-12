@@ -35,19 +35,17 @@ class LocalTest(unittest.TestCase):
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
-        infrap.push_instructions(cmd_crn)
+        node = infrap.push_instructions(cmd_crn)[0]
         self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node['node_id']))
     def test_drop_node(self):
         infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
         eid = uid()
         node = DummyNode(eid)
-        print node.items()
-        print node['environment_id']
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
-        infrap.push_instructions(cmd_crn)
+        node = infrap.push_instructions(cmd_crn)[0]
         cmd_rmn = infrap.cri_drop_node(node['node_id'])
         infrap.push_instructions(cmd_rmn)
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
@@ -59,7 +57,7 @@ class LocalTest(unittest.TestCase):
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
-        infrap.push_instructions(cmd_crn)
+        node = infrap.push_instructions(cmd_crn)[0]
         cmd_rmn = infrap.cri_drop_node(node['node_id'])
         cmd_rme = infrap.cri_drop_environment(eid)
         infrap.push_instructions(cmd_rmn)
@@ -73,8 +71,6 @@ class LocalTest(unittest.TestCase):
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crns = (infrap.cri_create_node(node) for node in nodes)
         infrap.push_instructions(cmd_cre)
-        infrap.push_instructions(cmd_crns)
-        self.assertEqual(
-            repr(self.ib),
-            '{0}:[{1}]'.format(eid, ', '.join('{0}_True'.format(n.id)
-                                                for n in nodes)))
+        nodes = infrap.push_instructions(cmd_crns)
+        self.assertEqual(len(self.ib.environments), 1)
+        self.assertEqual(len(self.ib.environments.values()[0]), 5)

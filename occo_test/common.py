@@ -20,14 +20,19 @@ def uid():
     return str(uuid.uuid4())
 
 dummydata = {
-    'backends.auth_data' : {
-    },
-    'service_composer.aux_data' : {
-    },
+    'backends.auth_data' : {},
+    'service_composer.aux_data' : {},
+    'node.resource.address': 'none',
+    'node.resource.ip_address': 'none',
+    'node.state': 'running:ready',
     'node.definition' : {
         'implementation_type': 'chef+cloudinit',
         'service_composer_id' : 'none',
-        'backend_id': 'none'
+        'backend_id': 'none',
+        'synch_strategy': {
+            'protocol': 'basic',
+            'ping': False
+        }
     }
 }
 
@@ -43,8 +48,6 @@ class DummyNode(dict):
     @property
     def started(self):
         return self.get('_started', False)
-    def __repr__(self):
-        return '%s_%r'%(self['node_id'], self.started)
 
 class DummyInfoBroker(object):
     def __init__(self, main_info_broker=False):
@@ -56,7 +59,9 @@ class DummyInfoBroker(object):
         return dummydata[key]
     def __repr__(self):
         log.info('%r', self.environments)
-        nodelist_repr = lambda nodelist: ', '.join(repr(n) for n in nodelist)
+        nodelist_repr = lambda nodelist: ', '.join(
+            "{0}_{1}".format(n['node_id'], n.get('_started', False))
+            for n in nodelist)
         envlist_repr = list('%s:[%s]'%(k, nodelist_repr(v))
                             for (k, v) in self.environments.iteritems())
         return ' '.join(envlist_repr)
