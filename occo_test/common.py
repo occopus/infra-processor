@@ -30,13 +30,13 @@ class DummyNode(dict):
         self['environment_id'] = environment_id
         self['type'] = 'dummynode'
         if force_id:
-            self['id'] = force_id
+            self['node_id'] = force_id
         self._started = False
     @property
     def started(self):
-        return self._started
+        return self.get('_started', False)
     def __repr__(self):
-        return '%s_%r'%(self['id'], self.started)
+        return '%s_%r'%(self['node_id'], self.started)
 
 class DummyInfoBroker(object):
     def __init__(self, main_info_broker=False):
@@ -59,7 +59,7 @@ class DummyServiceComposer(object):
     def register_node(self, node):
         log.debug("[SC] Registering node: %r", node)
         self.ib.environments[node['environment_id']].append(node)
-        self.ib.node_lookup[node['id']] = node
+        self.ib.node_lookup[node['node_id']] = node
         log.debug("[SC] Done - '%r'", self.ib)
     def drop_node(self, node_id):
         log.debug("[SC] Dropping node '%s'", node_id)
@@ -67,7 +67,7 @@ class DummyServiceComposer(object):
         env_id = node['environment_id']
         self.ib.environments[env_id] = list(
             i for i in self.ib.environments[env_id]
-            if i['id'] != node_id)
+            if i['node_id'] != node_id)
         del self.ib.node_lookup[node_id]
         log.debug("[SC] Done - '%r'", self.ib)
 
@@ -85,11 +85,11 @@ class DummyCloudHandler(object):
         self.ib = infobroker
     def create_node(self, node):
         log.debug("[CH] Creating node: %r", node)
-        node._started = True
+        node['_started'] = True
         log.debug("[SC] Done - '%r'", self.ib)
 
     def drop_node(self, node_id):
         log.debug("[CH] Dropping node '%s'", node_id)
         node = self.ib.node_lookup[node_id]
-        node._started = False
+        node['_started'] = False
         log.debug("[SC] Done - '%r'", self.ib)
