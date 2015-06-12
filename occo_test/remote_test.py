@@ -6,22 +6,27 @@
 
 import unittest
 from common import *
-import occo.infraprocessor as ip
+import occo.infraprocessor.basic_infraprocessor
+import occo.infraprocessor.remote_infraprocessor as rip
+import occo.infraprocessor.infraprocessor as ip
+from occo.infobroker.uds import UDS
 import occo.util as util
 import threading as th
 import time
 
-class BaseTest(unittest.TestCase):
+class RemoteTest(unittest.TestCase):
     def setUp(self):
         self.ib = DummyInfoBroker(main_info_broker=True)
         self.sc = DummyServiceComposer(self.ib)
         self.ch = DummyCloudHandler(self.ib)
+        self.uds = UDS.instantiate(protocol='dict')
     def test_create_environment(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ch, self.sc)
-        skeleton = ip.RemoteInfraProcessorSkeleton(
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
+        skeleton = rip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
-        stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
+        stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
         eid = uid()
         cmd_cre = stub.cri_create_env(eid)
@@ -40,13 +45,14 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
     def test_create_node(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ch, self.sc)
-        skeleton = ip.RemoteInfraProcessorSkeleton(
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
+        skeleton = rip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
-        stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
+        stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
         eid = uid()
-        node = DummyNode(uid(), eid)
+        node = DummyNode(eid)
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
         with stub:
@@ -65,13 +71,14 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node.id))
     def test_drop_node(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ch, self.sc)
-        skeleton = ip.RemoteInfraProcessorSkeleton(
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
+        skeleton = rip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
-        stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
+        stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
         eid = uid()
-        node = DummyNode(uid(), eid)
+        node = DummyNode(eid)
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
         cmd_rmn = infrap.cri_drop_node(node.id)
@@ -92,13 +99,14 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
     def test_drop_environment(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ch, self.sc)
-        skeleton = ip.RemoteInfraProcessorSkeleton(
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
+        skeleton = rip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
-        stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
+        stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
         eid = uid()
-        node = DummyNode(uid(), eid)
+        node = DummyNode(eid)
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
         cmd_rmn = infrap.cri_drop_node(node.id)
@@ -121,13 +129,14 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(repr(self.ib), '')
     def test_create_multiple_nodes(self):
         event = th.Event()
-        infrap = ip.InfraProcessor(self.ch, self.sc)
-        skeleton = ip.RemoteInfraProcessorSkeleton(
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
+        skeleton = rip.RemoteInfraProcessorSkeleton(
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
-        stub = ip.RemoteInfraProcessor(cfg.ip_mqconfig)
+        stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
         eid = uid()
-        nodes = list(DummyNode(uid(), eid) for i in xrange(5))
+        nodes = list(DummyNode(eid) for i in xrange(5))
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crns = (infrap.cri_create_node(node) for node in nodes)
         with stub:

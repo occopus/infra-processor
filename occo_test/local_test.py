@@ -6,13 +6,14 @@
 
 import unittest
 from common import *
-import occo.infraprocessor as ip
+import occo.infraprocessor.basic_infraprocessor
+import occo.infraprocessor.infraprocessor as ip
 import occo.util as util
 import threading
 import occo.util.factory as factory
 from occo.infobroker.uds import UDS
 
-class BaseTest(unittest.TestCase):
+class LocalTest(unittest.TestCase):
     def setUp(self):
         self.ib = DummyInfoBroker(main_info_broker=True)
         self.uds = UDS.instantiate(protocol='dict')

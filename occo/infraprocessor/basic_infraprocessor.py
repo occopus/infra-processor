@@ -38,6 +38,7 @@ class CreateEnvironment(Command):
     def __init__(self, environment_id):
         Command.__init__(self)
         self.environment_id = environment_id
+
     def perform(self, infraprocessor):
         return infraprocessor.servicecomposer.create_environment(
             self.environment_id)
@@ -162,6 +163,7 @@ class DropEnvironment(Command):
     def __init__(self, environment_id):
         Command.__init__(self)
         self.environment_id = environment_id
+
     def perform(self, infraprocessor):
         infraprocessor.servicecomposer.drop_environment(self.environment_id)
 

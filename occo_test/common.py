@@ -29,6 +29,7 @@ class DummyNode(dict):
     def __init__(self, environment_id):
         self['environment_id'] = environment_id
         self['type'] = 'dummynode'
+        self.id = uid()
         self._started = False
     @property
     def environment_id(self):
