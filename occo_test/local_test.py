@@ -12,24 +12,22 @@ import threading
 import occo.util.factory as factory
 from occo.infobroker.uds import UDS
 
-instantiate = factory.MultiBackend.instantiate
-
 class BaseTest(unittest.TestCase):
     def setUp(self):
         self.ib = DummyInfoBroker(main_info_broker=True)
-        self.uds = instantiate(UDS, protocol='dict')
+        self.uds = UDS.instantiate(protocol='dict')
         self.sc = DummyServiceComposer(self.ib)
         self.ch = DummyCloudHandler(self.ib)
     def test_create_environment(self):
-        infrap = instantiate(ip.InfraProcessor, 'basic',
-                             self.uds, self.ch, self.sc)
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
         eid = uid()
         cmd = infrap.cri_create_env(eid)
         infrap.push_instructions(cmd)
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
     def test_create_node(self):
-        infrap = instantiate(ip.InfraProcessor, 'basic',
-                             self.uds, self.ch, self.sc)
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
         eid = uid()
         node = DummyNode(eid)
         cmd_cre = infrap.cri_create_env(eid)
@@ -38,8 +36,8 @@ class BaseTest(unittest.TestCase):
         infrap.push_instructions(cmd_crn)
         self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node.id))
     def test_drop_node(self):
-        infrap = instantiate(ip.InfraProcessor, 'basic',
-                             self.uds, self.ch, self.sc)
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
         eid = uid()
         node = DummyNode(eid)
         cmd_cre = infrap.cri_create_env(eid)
@@ -50,8 +48,8 @@ class BaseTest(unittest.TestCase):
         infrap.push_instructions(cmd_rmn)
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
     def test_drop_environment(self):
-        infrap = instantiate(ip.InfraProcessor, 'basic',
-                             self.uds, self.ch, self.sc)
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
         eid = uid()
         node = DummyNode(eid)
         cmd_cre = infrap.cri_create_env(eid)
@@ -64,8 +62,8 @@ class BaseTest(unittest.TestCase):
         infrap.push_instructions(cmd_rme)
         self.assertEqual(repr(self.ib), '')
     def test_create_multiple_nodes(self):
-        infrap = instantiate(ip.InfraProcessor, 'basic',
-                             self.uds, self.ch, self.sc)
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
         eid = uid()
         nodes = list(DummyNode(eid) for i in xrange(5))
         cmd_cre = infrap.cri_create_env(eid)
