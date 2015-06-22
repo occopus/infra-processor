@@ -20,84 +20,8 @@ class RemoteTest(unittest.TestCase):
         self.sc = DummyServiceComposer(self.ib)
         self.ch = DummyCloudHandler(self.ib)
         self.uds = UDS.instantiate(protocol='dict')
-    def test_create_environment(self):
-        event = th.Event()
-        infrap = ip.InfraProcessor.instantiate(
-            'basic', self.uds, self.ch, self.sc)
-        skeleton = rip.RemoteInfraProcessorSkeleton(
-            infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
-        stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
-        eid = uid()
-        cmd_cre = stub.cri_create_env(eid)
-        with stub:
-            stub.push_instructions(cmd_cre)
-        def cth():
-            try:
-                with skeleton:
-                    skeleton.start_consuming()
-            except Exception:
-                log.exception('Exception in consumer thread')
-        consumer = th.Thread(target=cth)
-        consumer.start()
-        time.sleep(1)
-        event.set()
-        self.assertEqual(repr(self.ib), '%s:[]'%eid)
-    def test_create_node(self):
-        event = th.Event()
-        infrap = ip.InfraProcessor.instantiate(
-            'basic', self.uds, self.ch, self.sc)
-        skeleton = rip.RemoteInfraProcessorSkeleton(
-            infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
-        stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
-
-        eid, nid = uid(), uid()
-        node = DummyNode(eid, nid)
-        cmd_cre = infrap.cri_create_env(eid)
-        cmd_crn = infrap.cri_create_node(node)
-        with stub:
-            stub.push_instructions(cmd_cre)
-            stub.push_instructions(cmd_crn)
-        def cth():
-            try:
-                with skeleton:
-                    skeleton.start_consuming()
-            except Exception:
-                log.exception('Exception in consumer thread')
-        consumer = th.Thread(target=cth)
-        consumer.start()
-        time.sleep(1)
-        event.set()
-        self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node['node_id']))
-    def test_drop_node(self):
-        event = th.Event()
-        infrap = ip.InfraProcessor.instantiate(
-            'basic', self.uds, self.ch, self.sc)
-        skeleton = rip.RemoteInfraProcessorSkeleton(
-            infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
-        stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
-
-        eid, nid = uid(), uid()
-        node = DummyNode(eid, nid)
-        cmd_cre = infrap.cri_create_env(eid)
-        cmd_crn = infrap.cri_create_node(node)
-        cmd_rmn = infrap.cri_drop_node(node['node_id'])
-        with stub:
-            stub.push_instructions(cmd_cre)
-            stub.push_instructions(cmd_crn)
-            stub.push_instructions(cmd_rmn)
-        def cth():
-            try:
-                with skeleton:
-                    skeleton.start_consuming()
-            except Exception:
-                log.exception('Exception in consumer thread')
-        consumer = th.Thread(target=cth)
-        consumer.start()
-        time.sleep(1)
-        event.set()
-        self.assertEqual(repr(self.ib), '%s:[]'%eid)
-    def test_drop_environment(self):
+    def test_process(self):
         event = th.Event()
         infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
@@ -127,6 +51,7 @@ class RemoteTest(unittest.TestCase):
         time.sleep(1)
         event.set()
         self.assertEqual(repr(self.ib), '')
+
     def test_create_multiple_nodes(self):
         event = th.Event()
         infrap = ip.InfraProcessor.instantiate(
