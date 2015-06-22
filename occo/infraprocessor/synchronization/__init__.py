@@ -142,9 +142,17 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         return 'running:ready' == status
 
     def get_kwargs(self):
+        """
+        .. todo:: Make this more generic (not only BasicNodeSynchStrategy will
+            be parameterizable.
+        """
         if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
                 'synch_strategy', dict())
+            if isinstance(self.kwargs, basestring):
+                # synch_strategy has been specified as a non-parameterized
+                # string.
+                self.kwargs = dict()
         return self.kwargs
 
     def make_node_spec(self):
