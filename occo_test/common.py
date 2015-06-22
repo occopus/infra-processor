@@ -19,22 +19,23 @@ import uuid
 def uid():
     return str(uuid.uuid4())
 
-dummydata = {
-    'backends.auth_data' : {},
-    'service_composer.aux_data' : {},
-    'node.resource.address': 'none',
-    'node.resource.ip_address': 'none',
-    'node.state': 'running:ready',
-    'node.definition' : {
-        'implementation_type': 'chef+cloudinit',
-        'service_composer_id' : 'none',
-        'backend_id': 'none',
-        'synch_strategy': {
-            'protocol': 'basic',
-            'ping': False
-        }
-    }
-}
+import yaml
+dummydata = yaml.load(
+    """
+    backends.auth_data : {}
+    service_composer.aux_data : {}
+    node.resource.address: null
+    node.resource.ip_address: null
+    node.state: running:ready
+    node.definition:
+        implementation_type: chef+cloudinit
+        service_composer_id: null
+        backend_id: null
+        synch_strategy:
+            protocol: basic
+            ping: false
+        attributes: {}
+    """)
 
 class DummyNode(dict):
     def __init__(self, environment_id, force_id=None):
