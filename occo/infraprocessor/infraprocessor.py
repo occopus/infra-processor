@@ -130,6 +130,6 @@ class InfraProcessor(factory.MultiBackend):
         :type deadline: :class:`int`, unix timestamp
         """
         if deadline is None:
-            deadline = int(time.time())+1
+            deadline = int(time.time()) + 1 # ~ceil()
         self.cancelled_until = deadline
         self.strategy.cancel_pending()
