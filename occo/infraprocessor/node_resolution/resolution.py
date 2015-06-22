@@ -90,7 +90,7 @@ class Resolver(factory.MultiBackend):
         :return: A reference to ``node_definition``.
         :rtype: :ref:`Resolved Node Definition <resolvednode>`
         """
-        return node_definition
+        raise NotImplementedError()
 
 @factory.register(Resolver, 'cooked')
 class IdentityResolver(Resolver):
