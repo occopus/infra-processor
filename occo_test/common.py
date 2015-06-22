@@ -9,6 +9,7 @@ import occo.util as util
 import logging
 import logging.config
 import occo.infobroker as ib
+import occo.infraprocessor.synchronization.primitives as sp
 
 cfg = config.DefaultYAMLConfig(util.rel_to_file('test.yaml'))
 
@@ -44,6 +45,9 @@ dummydata = yaml.load(
         synch1:
             <<: *DN
             synch_strategy: basic
+        synch_bad:
+            <<: *DN
+            synch_strategy: nonexistent
     """)
 
 class DummyNode(dict):

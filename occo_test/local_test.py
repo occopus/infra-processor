@@ -79,3 +79,14 @@ class LocalTest(unittest.TestCase):
         infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
         infrap.cancel_pending()
+    def test_synchstrategies(self):
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
+        eid = uid()
+        node_1 = DummyNode(eid)
+        node_2 = DummyNode(eid, node_type='synch1')
+        cmd_cre = infrap.cri_create_env(eid)
+        cmd_crns = [infrap.cri_create_node(node_1),
+                    infrap.cri_create_node(node_2)]
+        infrap.push_instructions(cmd_cre)
+        infrap.push_instructions(cmd_crns)
