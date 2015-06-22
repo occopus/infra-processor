@@ -74,3 +74,8 @@ class LocalTest(unittest.TestCase):
         nodes = infrap.push_instructions(cmd_crns)
         self.assertEqual(len(self.ib.environments), 1)
         self.assertEqual(len(self.ib.environments.values()[0]), 5)
+    def test_cancel_pending(self):
+        # Coverage only
+        infrap = ip.InfraProcessor.instantiate(
+            'basic', self.uds, self.ch, self.sc)
+        infrap.cancel_pending()
