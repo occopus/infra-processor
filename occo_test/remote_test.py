@@ -51,8 +51,8 @@ class RemoteTest(unittest.TestCase):
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
         stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
-        eid = uid()
-        node = DummyNode(eid)
+        eid, nid = uid(), uid()
+        node = DummyNode(eid, nid)
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
         with stub:
@@ -68,7 +68,7 @@ class RemoteTest(unittest.TestCase):
         consumer.start()
         time.sleep(1)
         event.set()
-        self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node['id']))
+        self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node['node_id']))
     def test_drop_node(self):
         event = th.Event()
         infrap = ip.InfraProcessor.instantiate(
@@ -77,11 +77,11 @@ class RemoteTest(unittest.TestCase):
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
         stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
-        eid = uid()
-        node = DummyNode(eid)
+        eid, nid = uid(), uid()
+        node = DummyNode(eid, nid)
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
-        cmd_rmn = infrap.cri_drop_node(node['id'])
+        cmd_rmn = infrap.cri_drop_node(node['node_id'])
         with stub:
             stub.push_instructions(cmd_cre)
             stub.push_instructions(cmd_crn)
@@ -105,11 +105,11 @@ class RemoteTest(unittest.TestCase):
             infrap, cfg.ip_mqconfig, cfg.ctl_mqconfig, event)
         stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
-        eid = uid()
-        node = DummyNode(eid)
+        eid, nid = uid(), uid()
+        node = DummyNode(eid, nid)
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crn = infrap.cri_create_node(node)
-        cmd_rmn = infrap.cri_drop_node(node['id'])
+        cmd_rmn = infrap.cri_drop_node(node['node_id'])
         cmd_rme = infrap.cri_drop_environment(eid)
         with stub:
             stub.push_instructions(cmd_cre)
@@ -136,7 +136,7 @@ class RemoteTest(unittest.TestCase):
         stub = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
 
         eid = uid()
-        nodes = list(DummyNode(eid) for i in xrange(5))
+        nodes = list(DummyNode(eid, uid()) for i in xrange(5))
         cmd_cre = infrap.cri_create_env(eid)
         cmd_crns = (infrap.cri_create_node(node) for node in nodes)
         with stub:
@@ -154,5 +154,5 @@ class RemoteTest(unittest.TestCase):
         event.set()
         self.assertEqual(
             repr(self.ib),
-            '{0}:[{1}]'.format(eid, ', '.join('{0}_True'.format(n.id)
+            '{0}:[{1}]'.format(eid, ', '.join('{0}_True'.format(n['node_id'])
                                                 for n in nodes)))
