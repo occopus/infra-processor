@@ -14,6 +14,7 @@ import occo.util as util
 import threading as th
 import time
 
+@unittest.skip
 class RemoteTest(unittest.TestCase):
     def setUp(self):
         self.ib = DummyInfoBroker(main_info_broker=True)
