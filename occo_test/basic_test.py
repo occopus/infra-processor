@@ -6,7 +6,7 @@
 
 import unittest
 from common import *
-import occo.infraprocessor.basic_infraprocessor
+import occo.infraprocessor.basic_infraprocessor as bip
 import occo.infraprocessor.infraprocessor as ip
 import occo.util as util
 from occo.infobroker.uds import UDS
@@ -25,35 +25,35 @@ class BaseTest(unittest.TestCase):
         self.infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_create_env(Stuff()).__class__,
-                         ip.CreateEnvironment)
+                         bip.CreateEnvironment)
     def test_cmd_2(self):
         self.infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_create_node(Stuff()).__class__,
-                         ip.CreateNode)
+                         bip.CreateNode)
     def test_cmd_3(self):
         self.infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_drop_environment(Stuff()).__class__,
-                         ip.DropEnvironment)
+                         bip.DropEnvironment)
     def test_cmd_4(self):
         self.infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
         self.assertEqual(self.infrap.cri_drop_node(Stuff()).__class__,
-                         ip.DropNode)
+                         bip.DropNode)
     def test_remote_cmd_1(self):
         self.infrap = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_create_env(Stuff()).__class__,
-                         ip.CreateEnvironment)
+                         bip.CreateEnvironment)
     def test_remote_cmd_2(self):
         self.infrap = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_create_node(Stuff()).__class__,
-                         ip.CreateNode)
+                         bip.CreateNode)
     def test_remote_cmd_3(self):
         self.infrap = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_drop_environment(Stuff()).__class__,
-                         ip.DropEnvironment)
+                         bip.DropEnvironment)
     def test_remote_cmd_4(self):
         self.infrap = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_drop_node(Stuff()).__class__,
-                         ip.DropNode)
+                         bip.DropNode)
