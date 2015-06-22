@@ -81,12 +81,14 @@ class CompositeStatus(object):
 @ib.provider
 class SynchronizationProvider(ib.InfoProvider):
     @ib.provides('node.address')
+    @util.wet_method('127.0.0.1')
     def get_server_address(self, **node_spec):
         inst = ib.main_info_broker.get('node.find_one', **node_spec)
         return ib.main_info_broker.get('node.resource.address', inst)
 
     @ib.provides('synch.node_reachable')
     @ib.provides('node.network_reachable')
+    @util.wet_method(True)
     def reachable(self, **node_spec):
         addr = ib.main_info_broker.get('node.address', **node_spec)
         try:
@@ -103,6 +105,7 @@ class SynchronizationProvider(ib.InfoProvider):
             return (retval == 0)
 
     @ib.provides('synch.site_available')
+    @util.wet_method(True)
     def site_available(self, url, **kwargs):
         try:
             response = util.do_request(url, 'head', **kwargs)
@@ -113,6 +116,7 @@ class SynchronizationProvider(ib.InfoProvider):
             return response.success
 
     @ib.provides('node.state_report')
+    @util.wet_method(dict(dummy_state_report=True))
     def node_state_report(self, instance_data):
         from ..synchronization import get_synch_strategy
         strategy = get_synch_strategy(instance_data)
@@ -130,6 +134,7 @@ class SynchronizationProvider(ib.InfoProvider):
         )
 
     @ib.provides('infrastructure.state_report')
+    @util.wet_method(dict(dummy_state_report=True))
     def infra_state_report(self, infra_id):
         dynamic_state = \
             ib.main_info_broker.get('infrastructure.state', infra_id)
