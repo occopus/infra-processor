@@ -27,6 +27,10 @@ class NodeSynchTimeout(Exception):
 
 import time
 def sleep(timeout, cancel_event):
+    """
+    Sleeps  until the timeout is reached, or until cancelled through
+    :param:`cancel_event`.
+    """
     if cancel_event:
         cancel_event.wait(timeout=timeout)
         if cancel_event.isset():

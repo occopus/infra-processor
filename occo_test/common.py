@@ -28,26 +28,31 @@ dummydata = yaml.load(
     node.resource.address: null
     node.resource.ip_address: null
     node.state: running:ready
-    node.definition:
-        implementation_type: chef+cloudinit
-        service_composer_id: null
-        backend_id: null
-        synch_strategy:
-            protocol: basic
-            ping: false
-        attributes:
-            attr1: 1
-            attr2:
-              - "{{ find_node_id('preexisting_node') }}"
-              - attr4
+    nodedefs:
+        dummynode: &DN
+            implementation_type: chef+cloudinit
+            service_composer_id: null
+            backend_id: null
+            synch_strategy:
+                protocol: basic
+                ping: false
+            attributes:
+                attr1: 1
+                attr2:
+                  - "{{ find_node_id('preexisting_node') }}"
+                  - attr4
+        synch1:
+            <<: *DN
+            synch_strategy: basic
     """)
 
 class DummyNode(dict):
-    def __init__(self, environment_id, force_id=None):
+    def __init__(self, environment_id, force_id=None,
+                 node_type='dummynode', node_name='dummynode'):
         self['environment_id'] = environment_id
         self['user_id'] = 0
-        self['type'] = 'dummynode'
-        self['name'] = 'dummynode'
+        self['type'] = node_type
+        self['name'] = node_name
         if force_id:
             self['node_id'] = force_id
         self._started = False
@@ -74,6 +79,10 @@ class DummyInfoBroker(ib.InfoProvider):
             return [self.node_lookup[name]]
         except KeyError:
             return None
+
+    @ib.provides('node.definition')
+    def nodedef(self, node_type, backend_id):
+        return dummydata['nodedefs'][node_type]
 
     def __repr__(self):
         log.info('%r', self.environments)
