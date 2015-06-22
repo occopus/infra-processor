@@ -61,17 +61,23 @@ class DummyNode(dict):
         return self.get('_started', False)
 
 @ib.provider
-class DummyInfoBroker(ib.InfoProvider):
+class DefaultIB(ib.InfoProvider):
+    def get(self, key, *args, **kwargs):
+        return dummydata[key]
+    def can_get(self, key):
+        return True
+
+@ib.provider
+class DummyInfoBroker(ib.InfoRouter):
     def __init__(self, main_info_broker=True):
-        ib.InfoProvider.__init__(self, main_info_broker=main_info_broker)
+        ib.InfoRouter.__init__(self, main_info_broker=main_info_broker)
         self.environments = dict()
         self.node_lookup = dict(preexisting_node=['preexisting node'])
-
-    def get(self, key, *args, **kwargs):
-        if self.can_get(key):
-            return ib.InfoProvider.get(self, key, *args, **kwargs)
-        else:
-            return dummydata[key]
+        synch = sp.SynchronizationProvider()
+        synch.dry_run = True
+        self.sub_providers = [
+            synch, DefaultIB()
+        ]
 
     @ib.provides('node.find')
     def find_node(self, infra_id, name):
