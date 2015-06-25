@@ -103,4 +103,7 @@ class IdentityResolver(Resolver):
         """
         Implementation of :meth:`Resolver.resolve_node`.
         """
-        pass
+        desc = self.node_description
+        node_definition['node_id'] = self.node_id
+        node_definition['environment_id'] = desc['environment_id']
+        node_definition['user_id'] = desc['user_id']
