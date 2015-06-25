@@ -27,6 +27,10 @@ class NodeSynchTimeout(Exception):
 
 import time
 def sleep(timeout, cancel_event):
+    """
+    Sleeps  until the timeout is reached, or until cancelled through
+    :param:`cancel_event`.
+    """
     if cancel_event:
         cancel_event.wait(timeout=timeout)
         if cancel_event.isset():
@@ -134,12 +138,21 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         log.debug('Checking node status for %r', self.node_id)
         status = self.ib.get('node.state', self.instance_data)
         log.info('Status of node %r is %r', self.node_id, status)
+        # TODO: standardize status
         return 'running:ready' == status
 
     def get_kwargs(self):
+        """
+        .. todo:: Make this more generic (not only BasicNodeSynchStrategy will
+            be parameterizable.
+        """
         if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
                 'synch_strategy', dict())
+            if isinstance(self.kwargs, basestring):
+                # synch_strategy has been specified as a non-parameterized
+                # string.
+                self.kwargs = dict()
         return self.kwargs
 
     def make_node_spec(self):
@@ -164,6 +177,9 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         if self.get_kwargs().get('ping', True):
             log.debug('Checking node reachability (%s)', self.node_id)
             return self.ib.get('synch.node_reachable', **self.make_node_spec())
+        else:
+            log.debug('Skipping.')
+            return True
 
     @status_component('URL Availability', basic_status)
     def urls_ready(self):

@@ -43,18 +43,21 @@ class RemotePushStrategy(Strategy):
         kept together. I recall I've already solved this, but I don't know what
         happened with it :S --Adam
     """
-    def __init__(self, destination_queue):
+    def __init__(self, destination_queue_cfg):
         super(RemotePushStrategy, self).__init__()
-        self.queue = destination_queue
+        self.queue_cfg = destination_queue_cfg
+        self.queue = comm.AsynchronProducer.instantiate(
+            **destination_queue_cfg)
     def perform(self, infraprocessor, instruction_list):
-        #TODO push as list; keep instructions together
-        results = list()
-        for i in instruction_list:
-            if self.cancelled:
-                break
-            result = self.queue.push_message(i)
-            results.append(result)
-        return results
+        with self.queue:
+            #TODO push as list; keep instructions together
+            results = list()
+            for i in instruction_list:
+                if self.cancelled:
+                    break
+                result = self.queue.push_message(i)
+                results.append(result)
+            return results
 
 class Mgmt_SkipUntil(Command):
     """
@@ -115,13 +118,11 @@ class RemoteInfraProcessor(BasicInfraProcessor):
         # Command classes must be inherited (hence the BasicInfraProcessor
         # parent), but this class does not need the IP's backends (infobroker,
         # cloudhandler, etc.)
-        InfraProcessor.__init__(self, process_strategy='remote')
-
-    def __enter__(self):
-        self.strategy.queue.__enter__()
-        return self
-    def __exit__(self, type, value, tb):
-        self.strategy.queue.__exit__(type, value, tb)
+        InfraProcessor.__init__(
+            self,
+            process_strategy=dict(
+                protocol='remote',
+                args=(destination_queue_cfg,)))
 
     def cancel_pending(self, deadline):
         """
@@ -173,10 +174,10 @@ class RemoteInfraProcessorSkeleton(object):
         ip_queue_cfg['cancel_event'] = None
         control_queue_cfg['cancel_event'] = None
 
-        self.ip_consumer = comm.EventDrivenConsumer(
-            self.process_ip_msg, **ip_queue_cfg)
-        self.control_consumer = comm.EventDrivenConsumer(
-            self.process_control_msg, **control_queue_cfg)
+        self.ip_consumer = comm.EventDrivenConsumer.instantiate(
+            processor=self.process_ip_msg, **ip_queue_cfg)
+        self.control_consumer = comm.EventDrivenConsumer.instantiate(
+            processor=self.process_control_msg, **control_queue_cfg)
 
     def __enter__(self):
         # Start the contexts of the consumers transactionally

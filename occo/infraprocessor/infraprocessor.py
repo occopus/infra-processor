@@ -13,6 +13,7 @@
 
 import logging
 import occo.util.factory as factory
+from occo.infraprocessor.strategy import Strategy
 import time
 
 log = logging.getLogger('occo.infraprocessor')
@@ -53,7 +54,7 @@ class InfraProcessor(factory.MultiBackend):
     .. automethod:: __enter__
     """
     def __init__(self, process_strategy):
-        self.strategy = process_strategy
+        self.strategy = Strategy.from_config(process_strategy)
         self.cancelled_until = 0
 
     def __enter__(self):
@@ -129,6 +130,6 @@ class InfraProcessor(factory.MultiBackend):
         :type deadline: :class:`int`, unix timestamp
         """
         if deadline is None:
-            deadline = int(time.time())+1
+            deadline = int(time.time()) + 1 # ~ceil()
         self.cancelled_until = deadline
         self.strategy.cancel_pending()
