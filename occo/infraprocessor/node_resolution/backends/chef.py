@@ -79,7 +79,7 @@ class ChefCloudinitResolver(Resolver):
 
     def attr_connect_resolve(self, node, attrs, attr_mapping):
         connections = [
-            dict(source_role="{0}_{1}".format(node['environment_id'], role),
+            dict(source_role="{0}_{1}".format(node['infra_id'], role),
                  source_attribute=mapping['attributes'][0],
                  destination_attribute=mapping['attributes'][1])
             for role, mappings in attr_mapping.iteritems()
@@ -116,7 +116,7 @@ class ChefCloudinitResolver(Resolver):
 
         def find_node_id(node_name):
             nodes = main_info_broker.get(
-                'node.find', infra_id=node['environment_id'], name=node_name)
+                'node.find', infra_id=node['infra_id'], name=node_name)
             if not nodes:
                 raise KeyError(
                     'No node exists with the given name', node_name)
@@ -152,7 +152,7 @@ class ChefCloudinitResolver(Resolver):
         # Amend resolved node with new information
         node_definition['node_id'] = node_id
         node_definition['name'] = node['name']
-        node_definition['environment_id'] = node['environment_id']
+        node_definition['infra_id'] = node['infra_id']
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
                                               node['user_id'])

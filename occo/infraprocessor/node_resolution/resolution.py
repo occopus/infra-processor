@@ -102,5 +102,5 @@ class IdentityResolver(Resolver):
         """
         desc = self.node_description
         node_definition['node_id'] = self.node_id
-        node_definition['environment_id'] = desc['environment_id']
+        node_definition['infra_id'] = desc['infra_id']
         node_definition['user_id'] = desc['user_id']

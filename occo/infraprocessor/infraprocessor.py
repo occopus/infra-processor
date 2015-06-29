@@ -88,7 +88,7 @@ class InfraProcessor(factory.MultiBackend):
         Performs the given list of independent instructions according to the
         strategy.
 
-        :param instructions: The list of instructions. For convenienve, a
+        :param instructions: The list of instructions. For convenience, a
             single instruction can be specified by itself, without enclosing it
             in an iterable.
         :type instructions: An iterable or a single :class:`Command`.
@@ -107,7 +107,7 @@ class InfraProcessor(factory.MultiBackend):
         log.debug('Filtered list: %r', filtered_list)
         return self.strategy.perform(self, filtered_list)
 
-    def cri_create_env(self, environment_id):
+    def cri_create_infrastructure(self, infra_id):
         """ Create a primitive that will create an infrastructure instance. """
         raise NotImplementedError()
     def cri_create_node(self, node):
@@ -116,7 +116,7 @@ class InfraProcessor(factory.MultiBackend):
     def cri_drop_node(self, node_id):
         """ Create a primitive that will delete a node instane. """
         raise NotImplementedError()
-    def cri_drop_environment(self, environment_id):
+    def cri_drop_infrastructure(self, infra_id):
         """ Create a primitive that will delete an infrastructure instance. """
         raise NotImplementedError()
 

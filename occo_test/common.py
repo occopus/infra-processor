@@ -51,9 +51,9 @@ dummydata = yaml.load(
     """)
 
 class DummyNode(dict):
-    def __init__(self, environment_id, force_id=None,
+    def __init__(self, infra_id, force_id=None,
                  node_type='dummynode', node_name='dummynode'):
-        self['environment_id'] = environment_id
+        self['infra_id'] = infra_id
         self['user_id'] = 0
         self['type'] = node_type
         self['name'] = node_name
@@ -108,26 +108,26 @@ class DummyServiceComposer(object):
         self.ib = infobroker
     def register_node(self, node):
         log.debug("[SC] Registering node: %r", node)
-        self.ib.environments[node['environment_id']].append(node)
+        self.ib.environments[node['infra_id']].append(node)
         self.ib.node_lookup[node['node_id']] = node
         log.debug("[SC] Done - '%r'", self.ib)
     def drop_node(self, node_id):
         log.debug("[SC] Dropping node '%s'", node_id)
         node = self.ib.node_lookup[node_id]
-        env_id = node['environment_id']
-        self.ib.environments[env_id] = list(
-            i for i in self.ib.environments[env_id]
+        infra_id = node['infra_id']
+        self.ib.environments[infra_id] = list(
+            i for i in self.ib.environments[infra_id]
             if i['node_id'] != node_id)
         del self.ib.node_lookup[node_id]
         log.debug("[SC] Done - '%r'", self.ib)
 
-    def create_environment(self, environment_id):
-        log.debug("[SC] Creating environment '%s'", environment_id)
-        self.ib.environments.setdefault(environment_id, [])
+    def create_infrastructure(self, infra_id):
+        log.debug("[SC] Creating environment '%s'", infra_id)
+        self.ib.environments.setdefault(infra_id, [])
         log.debug("[SC] Done - '%r'", self.ib)
-    def drop_environment(self, environment_id):
-        log.debug("[SC] Dropping environment '%s'", environment_id)
-        del self.ib.environments[environment_id]
+    def drop_infrastructure(self, infra_id):
+        log.debug("[SC] Dropping environment '%s'", infra_id)
+        del self.ib.environments[infra_id]
         log.debug("[SC] Done - '%r'", self.ib)
 
 class DummyCloudHandler(object):

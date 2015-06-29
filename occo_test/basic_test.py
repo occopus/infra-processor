@@ -24,8 +24,8 @@ class BaseTest(unittest.TestCase):
     def test_cmd_1(self):
         self.infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
-        self.assertEqual(self.infrap.cri_create_env(Stuff()).__class__,
-                         bip.CreateEnvironment)
+        self.assertEqual(self.infrap.cri_create_infrastructure(Stuff()).__class__,
+                         bip.CreateInfrastructure)
     def test_cmd_2(self):
         self.infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
@@ -34,8 +34,8 @@ class BaseTest(unittest.TestCase):
     def test_cmd_3(self):
         self.infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
-        self.assertEqual(self.infrap.cri_drop_environment(Stuff()).__class__,
-                         bip.DropEnvironment)
+        self.assertEqual(self.infrap.cri_drop_infrastructure(Stuff()).__class__,
+                         bip.DropInfrastructure)
     def test_cmd_4(self):
         self.infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
@@ -43,16 +43,16 @@ class BaseTest(unittest.TestCase):
                          bip.DropNode)
     def test_remote_cmd_1(self):
         self.infrap = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
-        self.assertEqual(self.infrap.cri_create_env(Stuff()).__class__,
-                         bip.CreateEnvironment)
+        self.assertEqual(self.infrap.cri_create_infrastructure(Stuff()).__class__,
+                         bip.CreateInfrastructure)
     def test_remote_cmd_2(self):
         self.infrap = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_create_node(Stuff()).__class__,
                          bip.CreateNode)
     def test_remote_cmd_3(self):
         self.infrap = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
-        self.assertEqual(self.infrap.cri_drop_environment(Stuff()).__class__,
-                         bip.DropEnvironment)
+        self.assertEqual(self.infrap.cri_drop_infrastructure(Stuff()).__class__,
+                         bip.DropInfrastructure)
     def test_remote_cmd_4(self):
         self.infrap = ip.InfraProcessor.instantiate('remote', cfg.ip_mqconfig)
         self.assertEqual(self.infrap.cri_drop_node(Stuff()).__class__,

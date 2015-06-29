@@ -32,10 +32,10 @@ class RemoteTest(unittest.TestCase):
 
         eid, nid = uid(), uid()
         node = DummyNode(eid, nid)
-        cmd_cre = infrap.cri_create_env(eid)
+        cmd_cre = infrap.cri_create_infrastructure(eid)
         cmd_crn = infrap.cri_create_node(node)
         cmd_rmn = infrap.cri_drop_node(node['node_id'])
-        cmd_rme = infrap.cri_drop_environment(eid)
+        cmd_rme = infrap.cri_drop_infrastructure(eid)
         with stub:
             stub.push_instructions(cmd_cre)
             stub.push_instructions(cmd_crn)
@@ -63,7 +63,7 @@ class RemoteTest(unittest.TestCase):
 
         eid = uid()
         nodes = list(DummyNode(eid, uid()) for i in xrange(5))
-        cmd_cre = infrap.cri_create_env(eid)
+        cmd_cre = infrap.cri_create_infrastructure(eid)
         cmd_crns = (infrap.cri_create_node(node) for node in nodes)
         with stub:
             stub.push_instructions(cmd_cre)
