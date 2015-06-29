@@ -21,6 +21,7 @@ __all__ = ['SynchronizationProvider', 'CompositeStatus', 'status_component',
 import logging
 import occo.util as util
 import occo.infobroker as ib
+from occo.exceptions import ConnectionError, HTTPTimeout, HTTPError
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 
@@ -109,7 +110,7 @@ class SynchronizationProvider(ib.InfoProvider):
     def site_available(self, url, **kwargs):
         try:
             response = util.do_request(url, 'head', **kwargs)
-        except (util.ConnectionError, util.HTTPTimeout, util.HTTPError) as ex:
+        except (ConnectionError, HTTPTimeout, HTTPError) as ex:
             log.warning('Error accessing [%s]: %s', url, ex)
             return False
         else:
