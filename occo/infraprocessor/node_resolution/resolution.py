@@ -44,9 +44,14 @@ def resolve_node(ib, node_id, node_description):
                                            node['type'], node.get('backend_id'))
             # The brokering service will call ib.get() as necessary.
     """
-    node_definition = ib.get('node.definition',
-                             node_description['type'],
-                             node_description.get('backend_id'))
+    node_definition = ib.get(
+        'node.definition',
+        node_description['type'],
+        preselected_backend_ids=(
+            node_description.get('backend_id')
+            or node_description.get('backend_ids')),
+        strategy=node_description.get('backend_selection_strategy'))
+
     resolver = Resolver.instantiate(
         node_definition['implementation_type'],
         info_broker=ib,
