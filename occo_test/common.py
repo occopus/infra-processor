@@ -91,7 +91,7 @@ class DummyInfoBroker(ib.InfoRouter):
             return None
 
     @ib.provides('node.definition')
-    def nodedef(self, node_type, backend_id):
+    def nodedef(self, node_type, preselected_backend_ids, strategy, **kwargs):
         return dummydata['nodedefs'][node_type]
 
     def __repr__(self):
