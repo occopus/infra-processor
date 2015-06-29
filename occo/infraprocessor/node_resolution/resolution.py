@@ -35,14 +35,6 @@ def resolve_node(ib, node_id, node_description):
         be resolved, filled in with information, to get a
         :ref:`Resolved Node Definition <resolvednode>`.
     :type node_description: :ref:`Node Description <nodedescription>`
-
-    .. todo:: Alternative, future version:
-
-        .. code:: python
-
-            node_definition = brokering_service.select_implementation(
-                                           node['type'], node.get('backend_id'))
-            # The brokering service will call ib.get() as necessary.
     """
     node_definition = ib.get(
         'node.definition',
