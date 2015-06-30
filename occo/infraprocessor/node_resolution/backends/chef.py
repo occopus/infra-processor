@@ -88,35 +88,35 @@ class ChefCloudinitResolver(Resolver):
 
         attrs['connections'] = connections
 
-    def resolve_attributes(self, node, node_definition, template_data):
+    def resolve_attributes(self, node_desc, node_definition, template_data):
         attrs = node_definition.get('attributes', dict())
-        attrs.update(node.get('attributes', dict()))
-        attr_mapping = node.get('mappings', dict()).get('inbound', dict())
+        attrs.update(node_desc.get('attributes', dict()))
+        attr_mapping = node_desc.get('mappings', dict()).get('inbound', dict())
 
         self.attr_template_resolve(attrs, template_data)
-        self.attr_connect_resolve(node, attrs, attr_mapping)
+        self.attr_connect_resolve(node_desc, attrs, attr_mapping)
 
         return attrs
 
-    def extract_synch_attrs(self, node):
+    def extract_synch_attrs(self, node_desc):
         """
         Fill synch_attrs.
 
         .. todo:: Maybe this should be moved to the Compiler. The IP
             depends on it, not the Chef service-composer.
         """
-        outedges = node.get('mappings', dict()).get('outbound', dict())
+        outedges = node_desc.get('mappings', dict()).get('outbound', dict())
 
         return [mapping['attributes'][0]
                 for mappings in outedges.itervalues() for mapping in mappings
                 if mapping['synch']]
 
-    def assemble_template_data(self, node, node_definition):
+    def assemble_template_data(self, node_desc, node_definition):
         from occo.infobroker import main_info_broker
 
         def find_node_id(node_name):
             nodes = main_info_broker.get(
-                'node.find', infra_id=node['infra_id'], name=node_name)
+                'node.find', infra_id=node_desc['infra_id'], name=node_name)
             if not nodes:
                 raise KeyError(
                     'No node exists with the given name', node_name)
@@ -127,14 +127,20 @@ class ChefCloudinitResolver(Resolver):
                     nodes[0]['node_id'])
             return nodes[0]
 
+        # As long as source_data is read-only, the following code is fine.
+        # As it is used only for rendering a template, it is yet read-only.
+        # If, for any reason, something starts modifying it, dict.update()-s
+        # will have to be changed to deep copy to avoid side effects. (Just
+        # like in compiler, when node variables are assembled.)
         source_data = dict(node_id=self.node_id)
-        source_data.update(node)
+        source_data.update(node_desc)
         source_data.update(node_definition)
         source_data['ibget'] = main_info_broker.get
         source_data['find_node_id'] = find_node_id
         return source_data
 
-    def render_template(self, node, node_definition, template_data):
+    def render_template(self, node_definition, template_data):
+        """Renders the template pertaining to the node definition"""
         template = self.extract_template(node_definition)
         return template.render(**template_data)
 
@@ -144,21 +150,21 @@ class ChefCloudinitResolver(Resolver):
         """
 
         # Shorthands
-        node = self.node_description
+        node_desc = self.node_description
         ib = self.info_broker
         node_id = self.node_id
-        template_data = self.assemble_template_data(node, node_definition)
+        template_data = self.assemble_template_data(node_desc, node_definition)
 
         # Amend resolved node with new information
         node_definition['node_id'] = node_id
-        node_definition['name'] = node['name']
-        node_definition['infra_id'] = node['infra_id']
+        node_definition['name'] = node_desc['name']
+        node_definition['infra_id'] = node_desc['infra_id']
         node_definition['auth_data'] = ib.get('backends.auth_data',
                                               node_definition['backend_id'],
-                                              node['user_id'])
-        node_definition['context'] = self.render_template(
-            node, node_definition, template_data)
+                                              node_desc['user_id'])
+        node_definition['context'] = self.render_template(node_definition,
+                                                          template_data)
         node_definition['attributes'] = self.resolve_attributes(
-            node, node_definition, template_data)
+            node_desc, node_definition, template_data)
         node_definition['synch_attrs'] = \
-            self.extract_synch_attrs(node)
+            self.extract_synch_attrs(node_desc)

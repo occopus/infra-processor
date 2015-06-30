@@ -110,7 +110,7 @@ class InfraProcessor(factory.MultiBackend):
     def cri_create_infrastructure(self, infra_id):
         """ Create a primitive that will create an infrastructure instance. """
         raise NotImplementedError()
-    def cri_create_node(self, node):
+    def cri_create_node(self, node_description):
         """ Create a primitive that will create an node instance. """
         raise NotImplementedError()
     def cri_drop_node(self, node_id):

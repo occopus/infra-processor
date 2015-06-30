@@ -27,7 +27,7 @@ log = logging.getLogger('occo.infraprocessor.node_resolution')
 
 def resolve_node(ib, node_id, node_description):
     """
-    Resolve node definition
+    Resolve node description
 
     :param str node_id: The internal unique identifier of the node.
     :param node_description: The description of the node type. This will be
@@ -42,13 +42,14 @@ def resolve_node(ib, node_id, node_description):
         preselected_backend_ids=(
             node_description.get('backend_id')
             or node_description.get('backend_ids')),
-        strategy=node_description.get('backend_selection_strategy'))
+        strategy=node_description.get('backend_selection_strategy', 'random'))
 
     resolver = Resolver.instantiate(
         node_definition['implementation_type'],
         info_broker=ib,
         node_id=node_id,
         node_description=node_description)
+
     resolver.resolve_node(node_definition)
     return node_definition
 
@@ -72,6 +73,7 @@ class Resolver(factory.MultiBackend):
         self.info_broker = info_broker
         self.node_id = node_id
         self.node_description = node_description
+
     def resolve_node(self, node_definition):
         """
         Overriden in a sub-class, ``node_definition`` should be updated

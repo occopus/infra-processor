@@ -53,9 +53,9 @@ class CreateNode(Command):
     :type node: :ref:`nodedescription`
 
     """
-    def __init__(self, node):
+    def __init__(self, node_description):
         Command.__init__(self)
-        self.node = node
+        self.node_description = node_description
 
     def perform(self, infraprocessor):
         """
@@ -79,22 +79,22 @@ class CreateNode(Command):
 
         # Quick-access references
         ib = infraprocessor.ib
-        node = self.node
+        node_description = self.node_description
 
         log.debug('Performing CreateNode on node {\n%s}',
-                  yaml.dump(node, default_flow_style=False))
+                  yaml.dump(node_description, default_flow_style=False))
 
         # Internal identifier of the node instance
         node_id = str(uuid.uuid4())
         # Resolve all the information required to instantiate the node using
         # the abstract description and the UDS/infobroker
-        resolved_node = resolve_node(ib, node_id, node)
+        resolved_node_def = resolve_node(ib, node_id, node_description)
         log.debug("Resolved node description:\n%s",
-                  yaml.dump(resolved_node, default_flow_style=False))
+                  yaml.dump(resolved_node_def, default_flow_style=False))
 
         # Create the node based on the resolved information
-        infraprocessor.servicecomposer.register_node(resolved_node)
-        instance_id = infraprocessor.cloudhandler.create_node(resolved_node)
+        infraprocessor.servicecomposer.register_node(resolved_node_def)
+        instance_id = infraprocessor.cloudhandler.create_node(resolved_node_def)
 
         import occo.infraprocessor.synchronization as synch
 
@@ -102,25 +102,28 @@ class CreateNode(Command):
         # See: :ref:`instancedata`.
         instance_data = dict(
             node_id=node_id,
-            backend_id=resolved_node['backend_id'],
-            user_id=node['user_id'],
+            backend_id=resolved_node_def['backend_id'],
+            user_id=node_description['user_id'],
             instance_id=instance_id,
-            node_description=node,
-            resolved_node_definition=resolved_node,
+            node_description=node_description,
+            resolved_node_definition=resolved_node_def,
         )
 
         # Although all information can be extraced from the system dynamically,
         # we keep an internal record on the state of the infrastructure for
         # time efficiency.
         infraprocessor.uds.register_started_node(
-            node['infra_id'], node['name'], instance_data)
+            node_description['infra_id'],
+            node_description['name'],
+            instance_data)
 
         log.info(
             "Node %s/%s/%s received address: %r (%s)",
-            node['infra_id'], node['name'], node_id,
+            node_description['infra_id'],
+            node_description['name'],
+            node_id,
             ib.get('node.resource.address', instance_data),
             ib.get('node.resource.ip_address', instance_data))
-
 
         try:
             # TODO Add timeout
@@ -132,7 +135,9 @@ class CreateNode(Command):
             raise
         else:
             log.info("Node %s/%s/%s has started",
-                     node['infra_id'], node['name'], node_id)
+                     node_description['infra_id'],
+                     node_description['name'],
+                     node_id)
 
         return instance_data
 
@@ -211,8 +216,8 @@ class BasicInfraProcessor(InfraProcessor):
 
     def cri_create_infrastructure(self, infra_id):
         return CreateInfrastructure(infra_id)
-    def cri_create_node(self, node):
-        return CreateNode(node)
+    def cri_create_node(self, node_description):
+        return CreateNode(node_description)
     def cri_drop_node(self, node_id):
         return DropNode(node_id)
     def cri_drop_infrastructure(self, infra_id):
