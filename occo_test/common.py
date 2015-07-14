@@ -28,7 +28,7 @@ dummydata = yaml.load(
     service_composer.aux_data : {}
     node.resource.address: null
     node.resource.ip_address: null
-    node.state: running:ready
+    node.state: ready
     nodedefs:
         dummynode: &DN
             implementation_type: chef+cloudinit

@@ -138,8 +138,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         log.debug('Checking node status for %r', self.node_id)
         status = self.ib.get('node.state', self.instance_data)
         log.info('Status of node %r is %r', self.node_id, status)
-        # TODO: standardize status
-        return 'running:ready' == status
+        return 'ready' == status
 
     def get_kwargs(self):
         """
