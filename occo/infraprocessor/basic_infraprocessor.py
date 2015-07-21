@@ -127,9 +127,6 @@ class CreateNode(Command):
             resolved_node_definition=resolved_node_def,
         )
 
-        # Although all information can be extraced from the system dynamically,
-        # we keep an internal record on the state of the infrastructure for
-        # time efficiency.
         infraprocessor.uds.register_started_node(
             node_description['infra_id'],
             node_description['name'],
