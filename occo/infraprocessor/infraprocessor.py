@@ -130,6 +130,9 @@ class InfraProcessor(factory.MultiBackend):
         :type deadline: :class:`int`, unix timestamp
         """
         if deadline is None:
+            # TODO This default may be a problem. If a command has a timestamp
+            # between NOW and NOW+1, it must be performed. But the +1 here
+            # may break this (race condition). Must think this through.
             deadline = int(time.time()) + 1 # ~ceil()
         self.cancelled_until = deadline
         self.strategy.cancel_pending()
