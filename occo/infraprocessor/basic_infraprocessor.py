@@ -76,8 +76,16 @@ class CreateNode(Command):
             (started, configured). We need a **timeout** on this.
 
         """
+
+        node_description = self.node_description
+        instance_data = dict(
+            node_id=str(uuid.uuid4()),
+            user_id=node_description['user_id'],
+            node_description=node_description,
+        )
+
         try:
-            instance_data = self._perform_create(infraprocessor)
+            self._perform_create(infraprocessor, instance_data)
         #TODO Handle other errors
         except Exception:
             log.exception('Unhandled exception when creating the node:')
@@ -87,45 +95,36 @@ class CreateNode(Command):
             log.info("Node %s/%s/%s has started",
                      node_description['infra_id'],
                      node_description['name'],
-                     node_id)
+                     instance_data['node_id'])
             return instance_data
 
-    def _perform_create(self, infraprocessor):
+    def _perform_create(self, infraprocessor, instance_data):
         """
         Core to :meth:`perform`. Used to avoid a level of nesting.
         """
 
         # Quick-access references
+        node_id = instance_data['node_id']
         ib = infraprocessor.ib
         node_description = self.node_description
 
         log.debug('Performing CreateNode on node {\n%s}',
                   yaml.dump(node_description, default_flow_style=False))
 
-        # Internal identifier of the node instance
-        node_id = str(uuid.uuid4())
         # Resolve all the information required to instantiate the node using
         # the abstract description and the UDS/infobroker
         resolved_node_def = resolve_node(ib, node_id, node_description)
         log.debug("Resolved node description:\n%s",
                   yaml.dump(resolved_node_def, default_flow_style=False))
+        instance_data['resolved_node_definition'] = resolved_node_def
+        instance_data['backend_id'] = resolved_node_def['backend_id']
 
         # Create the node based on the resolved information
         infraprocessor.servicecomposer.register_node(resolved_node_def)
         instance_id = infraprocessor.cloudhandler.create_node(resolved_node_def)
+        instance_data['instance_id'] = instance_id
 
         import occo.infraprocessor.synchronization as synch
-
-        # Information specifying a running node instance
-        # See: :ref:`instancedata`.
-        instance_data = dict(
-            node_id=node_id,
-            backend_id=resolved_node_def['backend_id'],
-            user_id=node_description['user_id'],
-            instance_id=instance_id,
-            node_description=node_description,
-            resolved_node_definition=resolved_node_def,
-        )
 
         infraprocessor.uds.register_started_node(
             node_description['infra_id'],
