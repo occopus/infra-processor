@@ -76,6 +76,24 @@ class CreateNode(Command):
             (started, configured). We need a **timeout** on this.
 
         """
+        try:
+            instance_data = self._perform_create(infraprocessor)
+        #TODO Handle other errors
+        except Exception:
+            log.exception('Unhandled exception when creating the node:')
+            # TODO: Undo damage
+            raise
+        else:
+            log.info("Node %s/%s/%s has started",
+                     node_description['infra_id'],
+                     node_description['name'],
+                     node_id)
+            return instance_data
+
+    def _perform_create(self, infraprocessor):
+        """
+        Core to :meth:`perform`. Used to avoid a level of nesting.
+        """
 
         # Quick-access references
         ib = infraprocessor.ib
@@ -125,19 +143,8 @@ class CreateNode(Command):
             ib.get('node.resource.address', instance_data),
             ib.get('node.resource.ip_address', instance_data))
 
-        try:
-            # TODO Add timeout
-            synch.wait_for_node(instance_data, infraprocessor.poll_delay)
-        #TODO Handle other errors
-        except Exception:
-            log.exception('Unhandled exception when waiting for node:')
-            # TODO: Undo damage
-            raise
-        else:
-            log.info("Node %s/%s/%s has started",
-                     node_description['infra_id'],
-                     node_description['name'],
-                     node_id)
+        # TODO Add timeout
+        synch.wait_for_node(instance_data, infraprocessor.poll_delay)
 
         return instance_data
 
