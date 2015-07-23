@@ -18,7 +18,7 @@ import uuid
 import yaml
 from occo.infraprocessor.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
-from occo.exceptions.orchestration import NodeCreationError
+from occo.exceptions.orchestration import *
 
 log = logging.getLogger('occo.infraprocessor.basic')
 
@@ -41,8 +41,13 @@ class CreateInfrastructure(Command):
         self.infra_id = infra_id
 
     def perform(self, infraprocessor):
-        return infraprocessor.servicecomposer.create_infrastructure(
-            self.infra_id)
+        try:
+            return infraprocessor.servicecomposer.create_infrastructure(
+                self.infra_id)
+        except Exception as ex:
+            log.exception('Error while creating infrastructure %r:',
+                          self.infra_id)
+            raise InfrastructureCreationError(self.infra_id, ex)
 
 class CreateNode(Command):
     """
@@ -163,8 +168,15 @@ class DropNode(Command):
         self.instance_data = instance_data
 
     def perform(self, infraprocessor):
-        infraprocessor.cloudhandler.drop_node(self.instance_data)
-        infraprocessor.servicecomposer.drop_node(self.instance_data)
+        try:
+            infraprocessor.cloudhandler.drop_node(self.instance_data)
+            infraprocessor.servicecomposer.drop_node(self.instance_data)
+        except Exception as ex:
+            log.exception('Error while dropping node %r:',
+                          instance_data['node_id'])
+            raise InfraProcessorError(self.instance_data['infra_id'],
+                                      ex,
+                                      instance_data=self.instance_data)
 
 class DropInfrastructure(Command):
     """
@@ -178,7 +190,12 @@ class DropInfrastructure(Command):
         self.infra_id = infra_id
 
     def perform(self, infraprocessor):
-        infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
+        try:
+            infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
+        except Exception as ex:
+            log.exception('Error while dropping infrastructure %r:',
+                          self.infra_id)
+            raise InfraProcessorError(self.infra_id, ex)
 
 ####################
 ## IP implementation
