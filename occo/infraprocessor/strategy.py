@@ -36,6 +36,7 @@ class Strategy(factory.MultiBackend):
     def cancelled(self):
         """ Returns :data:`True` iff performing the batch should be aborted."""
         return self.cancel_event.is_set()
+
     def cancel_pending(self):
         """
         Registers that performing the batch should be aborted. It only works
@@ -83,6 +84,7 @@ class PerformThread(threading.Thread):
         super(PerformThread, self).__init__()
         self.infraprocessor = infraprocessor
         self.instruction = instruction
+
     def run(self):
         try:
             self.result = self.instruction.perform(self.infraprocessor)
