@@ -104,7 +104,7 @@ class CreateNode(Command):
 
     def _perform_create(self, infraprocessor, instance_data):
         """
-        Core to :meth:`perform`. Used to avoid a level of nesting.
+        Core to :meth:`perform`. only to avoid a level of nesting.
         """
 
         # Quick-access references
@@ -161,6 +161,7 @@ class DropNode(Command):
     def __init__(self, instance_data):
         Command.__init__(self)
         self.instance_data = instance_data
+
     def perform(self, infraprocessor):
         infraprocessor.cloudhandler.drop_node(self.instance_data)
         infraprocessor.servicecomposer.drop_node(self.instance_data)
@@ -223,9 +224,12 @@ class BasicInfraProcessor(InfraProcessor):
 
     def cri_create_infrastructure(self, infra_id):
         return CreateInfrastructure(infra_id)
+
     def cri_create_node(self, node_description):
         return CreateNode(node_description)
+
     def cri_drop_node(self, node_id):
         return DropNode(node_id)
+
     def cri_drop_infrastructure(self, infra_id):
         return DropInfrastructure(infra_id)
