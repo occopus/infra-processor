@@ -174,9 +174,10 @@ class DropNode(Command):
         except Exception as ex:
             log.exception('Error while dropping node %r:',
                           instance_data['node_id'])
-            raise InfraProcessorError(self.instance_data['infra_id'],
-                                      ex,
-                                      instance_data=self.instance_data)
+            raise MinorInfraProcessorError(
+                self.instance_data['infra_id'],
+                ex,
+                instance_data=self.instance_data)
 
 class DropInfrastructure(Command):
     """
@@ -195,7 +196,7 @@ class DropInfrastructure(Command):
         except Exception as ex:
             log.exception('Error while dropping infrastructure %r:',
                           self.infra_id)
-            raise InfraProcessorError(self.infra_id, ex)
+            raise MinorInfraProcessorError(self.infra_id, ex)
 
 ####################
 ## IP implementation
