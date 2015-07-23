@@ -92,6 +92,8 @@ class CreateNode(Command):
             # thus it is not an error per se
             raise
         except Exception as ex:
+            log.exception('Error while creating node %r:',
+                          instance_data['node_id'])
             raise NodeCreationError(instance_data, ex)
         else:
             log.info("Node %s/%s/%s has started",
