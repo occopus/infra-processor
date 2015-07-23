@@ -18,6 +18,7 @@ import uuid
 import yaml
 from occo.infraprocessor.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
+from occo.exceptions.orchestration import NodeCreationError
 
 log = logging.getLogger('occo.infraprocessor.basic')
 
@@ -86,11 +87,12 @@ class CreateNode(Command):
 
         try:
             self._perform_create(infraprocessor, instance_data)
-        #TODO Handle other errors
-        except Exception:
-            log.exception('Unhandled exception when creating the node:')
-            # TODO: Undo damage
+        except KeyboardInterrupt:
+            # A KeyboardInterrupt is considered an intentional cancellation,
+            # thus it is not an error per se
             raise
+        except Exception as ex:
+            raise NodeCreationError(instance_data, ex)
         else:
             log.info("Node %s/%s/%s has started",
                      node_description['infra_id'],
