@@ -47,9 +47,56 @@ class Strategy(factory.MultiBackend):
 
     def perform(self, infraprocessor, instruction_list):
         """
-        Perform the instruction list.
+        Perform the instruction list. The actual strategy used is defined by
+        subclasses.
 
-        This method must be overridden in the implementations of the strategy.
+        :param infraprocessor: The infraprocessor that calls this method.
+            Commands are perfomed *on* an infrastructure processor, therefore
+            they need a reference to it.
+        :param instruction_list: An iterable containing the commands to be
+            performed.
+        """
+        try:
+            return self._perform(infraprocessor, instruction_list)
+
+        except NodeCreationError as ex:
+            log.error('A node creation error has occured, aborting remaining '
+                      'commands in this batch and undoing partial node '
+                      'creation (%r).', ex.instance_data['node_id'])
+            self._suspend_infrastructure(ex.infra_id)
+            self.cancel_pending(infraprocessor)
+            self._undo_create_node(infraprocessor, ex.instance_data)
+
+        except CriticalInfraProcessorError as ex:
+            log.error('A critical error has occured, aborting remaining '
+                      'commands in this batch.')
+            self._suspend_infrastructure(ex.infra_id)
+            self.cancel_pending(infraprocessor)
+
+        else:
+            return results
+
+    def _undo_create_node(self, infraprocessor, instance_data):
+       undo_command = infraprocessor.cri_drop_node(instance_data)
+       try:
+           undo_command.perform(infraprocessor)
+       except Exception:
+           log.exception(
+               'Error while dropping partially started node; IGNORING:')
+
+    def _suspend_infrastructure(self, infra_id):
+        # TODO: implement suspending infrastructure (see OCD-83)
+        pass
+
+    def _perform(self, infraprocessor, instruction_list):
+        """
+        Core function of :meth:`perform`. This method must be overridden in
+        the implementations of the strategy.
+
+        The actual implementation is expected to handle
+        :class:`~occo.exceptions.orchestration.MinorInfraProcessorError`\ s by
+        itself, but propagate other exceptions upward so :meth:`perform` can
+        handle the uniformly.
 
         :param infraprocessor: The infraprocessor that calls this method.
             Commands are perfomed *on* an infrastructure processor, therefore
@@ -62,13 +109,18 @@ class Strategy(factory.MultiBackend):
 @factory.register(Strategy, 'sequential')
 class SequentialStrategy(Strategy):
     """Implements :class:`Strategy`, performing the commands sequentially."""
-    def perform(self, infraprocessor, instruction_list):
+    def _perform(self, infraprocessor, instruction_list):
         results = list()
         for i in instruction_list:
             if self.cancelled:
                 break
-            result = i.perform(infraprocessor)
-            results.append(result)
+            try:
+                result = i.perform(infraprocessor)
+            except MinorInfraProcessorError:
+                log.error('A non-critical error has occured, ignoring.')
+                results.append(None)
+            else:
+                results.append(result)
         return results
 
 class PerformThread(threading.Thread):
@@ -96,7 +148,7 @@ class ParallelProcessesStrategy(Strategy):
     """
     Implements :class:`Strategy`, performing the commands in a parallel manner.
     """
-    def perform(self, infraprocessor, instruction_list):
+    def _perform(self, infraprocessor, instruction_list):
         threads = [PerformThread(infraprocessor, i) for i in instruction_list]
         # Start all threads
         for t in threads:
