@@ -179,6 +179,9 @@ class DropNode(Command):
         try:
             infraprocessor.cloudhandler.drop_node(self.instance_data)
             infraprocessor.servicecomposer.drop_node(self.instance_data)
+        except KeyboardInterrupt:
+            # A KeyboardInterrupt is considered intentional cancellation
+            pass
         except Exception as ex:
             log.exception('Error while dropping node %r:',
                           instance_data['node_id'])
@@ -201,6 +204,9 @@ class DropInfrastructure(Command):
     def perform(self, infraprocessor):
         try:
             infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
+        except KeyboardInterrupt:
+            # A KeyboardInterrupt is considered intentional cancellation
+            pass
         except Exception as ex:
             log.exception('Error while dropping infrastructure %r:',
                           self.infra_id)
