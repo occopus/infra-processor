@@ -122,10 +122,6 @@ class PerformThread(threading.Thread):
     """
     Thread object used by :class:`ParallelProcessesStrategy` to perform a
     single command.
-
-    .. todo:: Why did I call it Parallel*Processes* when it used threads?!
-    .. todo:: Should implement a parallel strategy that uses actual processes.
-        These would be abortable.
     """
     def __init__(self, infraprocessor, instruction):
         super(PerformThread, self).__init__()
@@ -142,7 +138,12 @@ class PerformThread(threading.Thread):
 class ParallelProcessesStrategy(Strategy):
     """
     Implements :class:`Strategy`, performing the commands in a parallel manner.
+
+    .. todo:: Implement using processes instead.
+
+    .. todo:: Must implement :meth:`cancel_pending` also.
     """
+
     def _perform(self, infraprocessor, instruction_list):
         threads = [PerformThread(infraprocessor, i) for i in instruction_list]
         # Start all threads
