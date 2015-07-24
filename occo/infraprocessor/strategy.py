@@ -48,6 +48,10 @@ class Strategy(factory.MultiBackend):
         try:
             return self._perform(infraprocessor, instruction_list)
         except NodeCreationError as ex:
+            # Undoing CreateNode is done here, not inside the CreateNode
+            # command, so cancellation can be dispatched (_handle_...) *before*
+            # the faulty node is started to be undone. I.e.: the order of the
+            # following two matters:
             self._handle_infraprocessorerror(infraprocessor, ex)
             self._undo_create_node(infraprocessor, ex.instance_data)
         except CriticalInfraProcessorError as ex:
@@ -58,8 +62,9 @@ class Strategy(factory.MultiBackend):
        try:
            undo_command.perform(infraprocessor)
        except Exception:
+           # TODO: maybe store instance_data in case it's stuck?
            log.exception(
-               'Error while dropping partially started node; IGNORING:')
+               'IGNORING error while dropping partially started node')
 
     def _handle_infraprocessorerror(self, infraprocessor, ex):
         log.error('Strategy.perform: exception: %s', ex)
