@@ -24,18 +24,7 @@ log = logging.getLogger('occo.infraprocessor.strategy')
 class Strategy(factory.MultiBackend):
     """
     Abstract strategy for processing a batch of *independent* commands.
-
-    :var cancel_event: When supported by an implementation of the strategy,
-        this event can be used to abort processing the batch.
-    :type cancel_event: :class:`threading.Event`
     """
-    def __init__(self):
-        self.cancel_event = threading.Event()
-
-    @property
-    def cancelled(self):
-        """ Returns :data:`True` iff performing the batch should be aborted."""
-        return self.cancel_event.is_set()
 
     def cancel_pending(self):
         """
@@ -43,7 +32,7 @@ class Strategy(factory.MultiBackend):
         iff the implementation of the strategy supports it (e.g. a thread pool
         or a sequential iteration can be aborted).
         """
-        self.cancel_event.set()
+        raise NotImplementedError()
 
     def perform(self, infraprocessor, instruction_list):
         """
@@ -109,6 +98,12 @@ class Strategy(factory.MultiBackend):
 @factory.register(Strategy, 'sequential')
 class SequentialStrategy(Strategy):
     """Implements :class:`Strategy`, performing the commands sequentially."""
+    def __init__(self):
+        self.cancelled = False
+
+    def cancel_pending(self):
+        self.cancelled = True
+
     def _perform(self, infraprocessor, instruction_list):
         results = list()
         for i in instruction_list:
