@@ -44,10 +44,16 @@ class CreateInfrastructure(Command):
         try:
             return infraprocessor.servicecomposer.create_infrastructure(
                 self.infra_id)
+        except KeyboardInterrupt:
+            # A KeyboardInterrupt is considered intentional cancellation
+            self._undo_create_infra(infraprocessor)
         except Exception as ex:
             log.exception('Error while creating infrastructure %r:',
                           self.infra_id)
             raise InfrastructureCreationError(self.infra_id, ex)
+
+    def _undo_create_infra(self, infraprocessor):
+        log.warning('SKIPPING undoing infrastructure creation: not implemented.')
 
 class CreateNode(Command):
     """
