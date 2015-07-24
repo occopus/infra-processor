@@ -93,9 +93,8 @@ class CreateNode(Command):
         try:
             self._perform_create(infraprocessor, instance_data)
         except KeyboardInterrupt:
-            # A KeyboardInterrupt is considered an intentional cancellation,
-            # thus it is not an error per se
-            raise
+            # A KeyboardInterrupt is considered intentional cancellation
+            self._undo_create_node(infraprocessor, instance_data)
         except Exception as ex:
             log.exception('Error while creating node %r:',
                           instance_data['node_id'])
@@ -152,6 +151,9 @@ class CreateNode(Command):
         synch.wait_for_node(instance_data, infraprocessor.poll_delay)
 
         return instance_data
+
+    def _undo_create_node(self, infraprocessor, instance_data):
+        log.warning('SKIPPING undoing node creation: not implemented.')
 
 class DropNode(Command):
     """
