@@ -47,6 +47,9 @@ class CreateInfrastructure(Command):
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             self._undo_create_infra(infraprocessor)
+        except InfraProcessorError:
+            # This is a pre-cooked exception, no need for transformation
+            raise
         except Exception as ex:
             log.exception('Error while creating infrastructure %r:',
                           self.infra_id)
@@ -101,6 +104,9 @@ class CreateNode(Command):
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             self._undo_create_node(infraprocessor, instance_data)
+        except InfraProcessorError:
+            # This is a pre-cooked exception, no need for transformation
+            raise
         except Exception as ex:
             log.exception('Error while creating node %r:',
                           instance_data['node_id'])
@@ -182,6 +188,9 @@ class DropNode(Command):
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             pass
+        except InfraProcessorError:
+            # This is a pre-cooked exception, no need for transformation
+            raise
         except Exception as ex:
             log.exception('Error while dropping node %r:',
                           instance_data['node_id'])
@@ -207,6 +216,9 @@ class DropInfrastructure(Command):
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             pass
+        except InfraProcessorError:
+            # This is a pre-cooked exception, no need for transformation
+            raise
         except Exception as ex:
             log.exception('Error while dropping infrastructure %r:',
                           self.infra_id)
