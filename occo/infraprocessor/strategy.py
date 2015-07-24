@@ -62,9 +62,6 @@ class Strategy(factory.MultiBackend):
             self._suspend_infrastructure(ex.infra_id)
             self.cancel_pending(infraprocessor)
 
-        else:
-            return results
-
     def _undo_create_node(self, infraprocessor, instance_data):
        undo_command = infraprocessor.cri_drop_node(instance_data)
        try:
