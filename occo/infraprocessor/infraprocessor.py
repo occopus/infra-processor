@@ -100,8 +100,6 @@ class InfraProcessor(factory.MultiBackend):
         instruction_list = \
             instructions if hasattr(instructions, '__iter__') \
             else (instructions,)
-        # TODO Reseting the event should probably be done by the strategy.
-        self.strategy.cancel_event.clear()
         # Don't bother with commands known to be already cancelled.
         filtered_list = list(filter(self._not_cancelled, instruction_list))
         log.debug('Filtered list: %r', filtered_list)
