@@ -47,20 +47,11 @@ class Strategy(factory.MultiBackend):
         """
         try:
             return self._perform(infraprocessor, instruction_list)
-
         except NodeCreationError as ex:
-            log.error('A node creation error has occured, aborting remaining '
-                      'commands in this batch and undoing partial node '
-                      'creation (%r).', ex.instance_data['node_id'])
-            self._suspend_infrastructure(ex.infra_id)
-            self.cancel_pending(infraprocessor)
+            self._handle_infraprocessorerror(infraprocessor, ex)
             self._undo_create_node(infraprocessor, ex.instance_data)
-
         except CriticalInfraProcessorError as ex:
-            log.error('A critical error has occured, aborting remaining '
-                      'commands in this batch.')
-            self._suspend_infrastructure(ex.infra_id)
-            self.cancel_pending(infraprocessor)
+            self._handle_infraprocessorerror(infraprocessor, ex)
 
     def _undo_create_node(self, infraprocessor, instance_data):
        undo_command = infraprocessor.cri_drop_node(instance_data)
@@ -69,6 +60,14 @@ class Strategy(factory.MultiBackend):
        except Exception:
            log.exception(
                'Error while dropping partially started node; IGNORING:')
+
+    def _handle_infraprocessorerror(self, infraprocessor, ex):
+        log.error('Strategy.perform: exception: %s', ex)
+        log.error('A critical error (%s) has occured, aborting remaining '
+                  'commands in this batch (infra_id: %r).',
+                  ex.__class__.__name__, ex.infra_id)
+        self._suspend_infrastructure(ex.infra_id)
+        self.cancel_pending()
 
     def _suspend_infrastructure(self, infra_id):
         # TODO: implement suspending infrastructure (see OCD-83)
