@@ -1,14 +1,4 @@
 autoimport: !python_import
-    - occo.infraprocessor.remote_infraprocessor
-default_mqconfig: !yaml_import &MQCFG
-    url: file://mqcfg.yaml
-ip_mqconfig: &IP_MQCFG
-    <<: *MQCFG
-    queue: remote_infobroker_test
-    routing_key: remote_infobroker_test
-ctl_mqconfig: &CTL_MQCFG
-    <<: *MQCFG
-    queue: remote_infobroker_test_ctl
-    routing_key: remote_infobroker_test_ctl
+    []
 logging: !yaml_import
     url: file://logging.yaml
