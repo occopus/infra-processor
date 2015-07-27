@@ -139,6 +139,9 @@ class ChefCloudinitResolver(Resolver):
         source_data['find_node_id'] = find_node_id
         return source_data
 
+    def check_template(self, node_definition):
+        pass
+
     def render_template(self, node_definition, template_data):
         """Renders the template pertaining to the node definition"""
         template = self.extract_template(node_definition)
@@ -168,3 +171,6 @@ class ChefCloudinitResolver(Resolver):
             node_desc, node_definition, template_data)
         node_definition['synch_attrs'] = \
             self.extract_synch_attrs(node_desc)
+
+        # Check context
+        self.check_template(node_definition)
