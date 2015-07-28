@@ -48,6 +48,9 @@ class Strategy(factory.MultiBackend):
         """
         try:
             return self._perform(infraprocessor, instruction_list)
+        except KeyboardInterrupt:
+            self.cancel_pending()
+            raise
         except NodeCreationError as ex:
             # Undoing CreateNode is done here, not inside the CreateNode
             # command, so cancellation can be dispatched (_handle_...) *before*
