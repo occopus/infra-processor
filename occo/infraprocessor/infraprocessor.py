@@ -100,8 +100,6 @@ class InfraProcessor(factory.MultiBackend):
         instruction_list = \
             instructions if hasattr(instructions, '__iter__') \
             else (instructions,)
-        # TODO Reseting the event should probably be done by the strategy.
-        self.strategy.cancel_event.clear()
         # Don't bother with commands known to be already cancelled.
         filtered_list = list(filter(self._not_cancelled, instruction_list))
         log.debug('Filtered list: %r', filtered_list)
@@ -130,6 +128,9 @@ class InfraProcessor(factory.MultiBackend):
         :type deadline: :class:`int`, unix timestamp
         """
         if deadline is None:
+            # TODO This default may be a problem. If a command has a timestamp
+            # between NOW and NOW+1, it must be performed. But the +1 here
+            # may break this (race condition). Must think this through.
             deadline = int(time.time()) + 1 # ~ceil()
         self.cancelled_until = deadline
         self.strategy.cancel_pending()

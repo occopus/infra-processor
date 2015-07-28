@@ -18,6 +18,7 @@ import uuid
 import yaml
 from occo.infraprocessor.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
+from occo.exceptions.orchestration import *
 
 log = logging.getLogger('occo.infraprocessor.basic')
 
@@ -40,8 +41,23 @@ class CreateInfrastructure(Command):
         self.infra_id = infra_id
 
     def perform(self, infraprocessor):
-        return infraprocessor.servicecomposer.create_infrastructure(
-            self.infra_id)
+        try:
+            return infraprocessor.servicecomposer.create_infrastructure(
+                self.infra_id)
+        except KeyboardInterrupt:
+            # A KeyboardInterrupt is considered intentional cancellation
+            self._undo_create_infra(infraprocessor)
+            raise
+        except InfraProcessorError:
+            # This is a pre-cooked exception, no need for transformation
+            raise
+        except Exception as ex:
+            log.exception('Error while creating infrastructure %r:',
+                          self.infra_id)
+            raise InfrastructureCreationError(self.infra_id, ex)
+
+    def _undo_create_infra(self, infraprocessor):
+        log.warning('SKIPPING undoing infrastructure creation: not implemented.')
 
 class CreateNode(Command):
     """
@@ -58,60 +74,68 @@ class CreateNode(Command):
         self.node_description = node_description
 
     def perform(self, infraprocessor):
+        node_description = self.node_description
+        instance_data = dict(
+            node_id=str(uuid.uuid4()),
+            infra_id=node_description['infra_id'],
+            user_id=node_description['user_id'],
+            node_description=node_description,
+        )
+
+        try:
+            self._perform_create(infraprocessor, instance_data)
+        except KeyboardInterrupt:
+            # A KeyboardInterrupt is considered intentional cancellation
+            self._undo_create_node(infraprocessor, instance_data)
+            raise
+        except NodeCreationError as ex:
+            # Amend a node creation error iff it couldn't have been initialized
+            # properly at the point of raising it.
+            if not ex.instance_data:
+                ex.instance_data = instance_data
+            raise
+        except InfraProcessorError:
+            # This is a pre-cooked exception, no need for transformation
+            raise
+        except Exception as ex:
+            log.exception('Error while creating node %r:',
+                          instance_data['node_id'])
+            raise NodeCreationError(instance_data, ex)
+        else:
+            log.info("Node %s/%s/%s has started",
+                     node_description['infra_id'],
+                     node_description['name'],
+                     instance_data['node_id'])
+            return instance_data
+
+    def _perform_create(self, infraprocessor, instance_data):
         """
-        Start the node.
-
-        This implementation is **incomplete**. We need to:
-
-        .. todo:: Handle errors when creating the node (if necessary; it is
-            possible that they are best handled in the InfraProcessor itself).
-
-        .. warning:: Does the parallelized strategy propagate errors
-            properly? Must verify!
-
-        .. todo::
-            Handle all known possible statuses
-
-        .. todo:: We synchronize on the node becoming completely ready
-            (started, configured). We need a **timeout** on this.
-
+        Core to :meth:`perform`. only to avoid a level of nesting.
         """
 
         # Quick-access references
+        node_id = instance_data['node_id']
         ib = infraprocessor.ib
         node_description = self.node_description
 
         log.debug('Performing CreateNode on node {\n%s}',
                   yaml.dump(node_description, default_flow_style=False))
 
-        # Internal identifier of the node instance
-        node_id = str(uuid.uuid4())
         # Resolve all the information required to instantiate the node using
         # the abstract description and the UDS/infobroker
         resolved_node_def = resolve_node(ib, node_id, node_description)
         log.debug("Resolved node description:\n%s",
                   yaml.dump(resolved_node_def, default_flow_style=False))
+        instance_data['resolved_node_definition'] = resolved_node_def
+        instance_data['backend_id'] = resolved_node_def['backend_id']
 
         # Create the node based on the resolved information
         infraprocessor.servicecomposer.register_node(resolved_node_def)
         instance_id = infraprocessor.cloudhandler.create_node(resolved_node_def)
+        instance_data['instance_id'] = instance_id
 
         import occo.infraprocessor.synchronization as synch
 
-        # Information specifying a running node instance
-        # See: :ref:`instancedata`.
-        instance_data = dict(
-            node_id=node_id,
-            backend_id=resolved_node_def['backend_id'],
-            user_id=node_description['user_id'],
-            instance_id=instance_id,
-            node_description=node_description,
-            resolved_node_definition=resolved_node_def,
-        )
-
-        # Although all information can be extraced from the system dynamically,
-        # we keep an internal record on the state of the infrastructure for
-        # time efficiency.
         infraprocessor.uds.register_started_node(
             node_description['infra_id'],
             node_description['name'],
@@ -125,21 +149,13 @@ class CreateNode(Command):
             ib.get('node.resource.address', instance_data),
             ib.get('node.resource.ip_address', instance_data))
 
-        try:
-            # TODO Add timeout
-            synch.wait_for_node(instance_data, infraprocessor.poll_delay)
-        #TODO Handle other errors
-        except Exception:
-            log.exception('Unhandled exception when waiting for node:')
-            # TODO: Undo damage
-            raise
-        else:
-            log.info("Node %s/%s/%s has started",
-                     node_description['infra_id'],
-                     node_description['name'],
-                     node_id)
+        # TODO Add timeout
+        synch.wait_for_node(instance_data, infraprocessor.poll_delay)
 
         return instance_data
+
+    def _undo_create_node(self, infraprocessor, instance_data):
+        log.warning('SKIPPING undoing node creation: not implemented.')
 
 class DropNode(Command):
     """
@@ -154,9 +170,24 @@ class DropNode(Command):
     def __init__(self, instance_data):
         Command.__init__(self)
         self.instance_data = instance_data
+
     def perform(self, infraprocessor):
-        infraprocessor.cloudhandler.drop_node(self.instance_data)
-        infraprocessor.servicecomposer.drop_node(self.instance_data)
+        try:
+            infraprocessor.cloudhandler.drop_node(self.instance_data)
+            infraprocessor.servicecomposer.drop_node(self.instance_data)
+        except KeyboardInterrupt:
+            # A KeyboardInterrupt is considered intentional cancellation
+            raise
+        except InfraProcessorError:
+            # This is a pre-cooked exception, no need for transformation
+            raise
+        except Exception as ex:
+            log.exception('Error while dropping node %r:',
+                          instance_data['node_id'])
+            raise MinorInfraProcessorError(
+                self.instance_data['infra_id'],
+                ex,
+                instance_data=self.instance_data)
 
 class DropInfrastructure(Command):
     """
@@ -170,7 +201,18 @@ class DropInfrastructure(Command):
         self.infra_id = infra_id
 
     def perform(self, infraprocessor):
-        infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
+        try:
+            infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
+        except KeyboardInterrupt:
+            # A KeyboardInterrupt is considered intentional cancellation
+            raise
+        except InfraProcessorError:
+            # This is a pre-cooked exception, no need for transformation
+            raise
+        except Exception as ex:
+            log.exception('Error while dropping infrastructure %r:',
+                          self.infra_id)
+            raise MinorInfraProcessorError(self.infra_id, ex)
 
 ####################
 ## IP implementation
@@ -216,9 +258,12 @@ class BasicInfraProcessor(InfraProcessor):
 
     def cri_create_infrastructure(self, infra_id):
         return CreateInfrastructure(infra_id)
+
     def cri_create_node(self, node_description):
         return CreateNode(node_description)
+
     def cri_drop_node(self, node_id):
         return DropNode(node_id)
+
     def cri_drop_infrastructure(self, infra_id):
         return DropInfrastructure(infra_id)
