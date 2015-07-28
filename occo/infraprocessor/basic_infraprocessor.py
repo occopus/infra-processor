@@ -47,6 +47,7 @@ class CreateInfrastructure(Command):
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             self._undo_create_infra(infraprocessor)
+            raise
         except InfraProcessorError:
             # This is a pre-cooked exception, no need for transformation
             raise
@@ -86,6 +87,7 @@ class CreateNode(Command):
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             self._undo_create_node(infraprocessor, instance_data)
+            raise
         except NodeCreationError as ex:
             # Amend a node creation error iff it couldn't have been initialized
             # properly at the point of raising it.
@@ -175,7 +177,7 @@ class DropNode(Command):
             infraprocessor.servicecomposer.drop_node(self.instance_data)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
-            pass
+            raise
         except InfraProcessorError:
             # This is a pre-cooked exception, no need for transformation
             raise
@@ -203,7 +205,7 @@ class DropInfrastructure(Command):
             infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
-            pass
+            raise
         except InfraProcessorError:
             # This is a pre-cooked exception, no need for transformation
             raise
