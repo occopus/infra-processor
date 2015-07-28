@@ -18,6 +18,7 @@ __all__ = ['wait_for_node', 'NodeSynchStrategy', 'NodeSynchTimeout',
 
 import logging
 import occo.util as util
+from occo.exceptions.orchestration import *
 import occo.util.factory as factory
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
@@ -97,7 +98,15 @@ def wait_for_node(instance_data,
     node_id = instance_data['node_id']
     log.info('Waiting for node %r to become ready.', node_id)
 
+    if timeout:
+        finish_time = time.time()+timeout
     while not synch.is_ready():
+        if timeout and time.time()>finish_time:
+            raise NodeCreationTimeOutError(
+                    instance_data = instance_data,
+                    reason = None,
+                    msg = 'Timeout ({0}s) in node creation!'.
+                        format(timeout))
         log.debug('Node %r is not ready, waiting %r seconds.',
                   node_id, poll_delay)
         if not sleep(poll_delay, cancel_event):
