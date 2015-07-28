@@ -14,6 +14,7 @@ __all__ = ['ChefCloudinitResolver']
 
 import logging
 import occo.util as util
+import occo.exceptions as exceptions
 import occo.util.factory as factory
 import yaml
 import jinja2
@@ -139,6 +140,25 @@ class ChefCloudinitResolver(Resolver):
         source_data['find_node_id'] = find_node_id
         return source_data
 
+    def check_if_cloud_config(self, node_definition):
+        if not node_definition['context'].startswith('#cloud-config'):
+            return
+        try:
+            yaml.load(node_definition['context'])
+        except yaml.YAMLError as e:
+            if hasattr(e, 'problem_mark'):
+                msg=('Schema error in context of '
+                     'node definition at line {0}.').format( e.problem_mark.line)
+            else:
+                msg='Schema error in context of node definition.'
+            raise exceptions.NodeContextSchemaError(
+                    node_definition=node_definition, reason=e, msg=msg)
+
+    def check_template(self, node_definition):
+        """Checks the context part of node definition"""
+        self.check_if_cloud_config(node_definition)
+        pass
+
     def render_template(self, node_definition, template_data):
         """Renders the template pertaining to the node definition"""
         template = self.extract_template(node_definition)
@@ -168,3 +188,6 @@ class ChefCloudinitResolver(Resolver):
             node_desc, node_definition, template_data)
         node_definition['synch_attrs'] = \
             self.extract_synch_attrs(node_desc)
+
+        # Check context
+        self.check_template(node_definition)
