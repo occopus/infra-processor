@@ -51,18 +51,20 @@ class Strategy(factory.MultiBackend):
             # Undoing CreateNode is done here, not inside the CreateNode
             # command, so cancellation can be dispatched (_handle_...) *before*
             # the faulty node is started to be undone. I.e.: the order of the
-            # following two matters:
+            # following two lines matters:
             self._handle_infraprocessorerror(infraprocessor, ex)
             self._undo_create_node(infraprocessor, ex.instance_data)
+            raise
         except CriticalInfraProcessorError as ex:
             self._handle_infraprocessorerror(infraprocessor, ex)
+            raise
 
     def _undo_create_node(self, infraprocessor, instance_data):
        undo_command = infraprocessor.cri_drop_node(instance_data)
        try:
            undo_command.perform(infraprocessor)
        except Exception:
-           # TODO: maybe store instance_data in case it's stuck?
+           # TODO: maybe store instance_data in UDS in case it's stuck?
            log.exception(
                'IGNORING error while dropping partially started node')
 
@@ -71,12 +73,7 @@ class Strategy(factory.MultiBackend):
         log.error('A critical error (%s) has occured, aborting remaining '
                   'commands in this batch (infra_id: %r).',
                   ex.__class__.__name__, ex.infra_id)
-        self._suspend_infrastructure(ex.infra_id)
         self.cancel_pending()
-
-    def _suspend_infrastructure(self, infra_id):
-        # TODO: implement suspending infrastructure (see OCD-83)
-        pass
 
     def _perform(self, infraprocessor, instruction_list):
         """
