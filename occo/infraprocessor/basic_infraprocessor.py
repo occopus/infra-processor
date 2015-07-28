@@ -91,7 +91,7 @@ class CreateNode(Command):
         except NodeCreationError as ex:
             # Amend a node creation error iff it couldn't have been initialized
             # properly at the point of raising it.
-            if not hasattr(ex, 'instance_data'):
+            if not ex.instance_data:
                 ex.instance_data = instance_data
             raise
         except InfraProcessorError:
