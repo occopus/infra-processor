@@ -51,7 +51,7 @@ class Strategy(factory.MultiBackend):
             # Undoing CreateNode is done here, not inside the CreateNode
             # command, so cancellation can be dispatched (_handle_...) *before*
             # the faulty node is started to be undone. I.e.: the order of the
-            # following two matters:
+            # following two lines matters:
             self._handle_infraprocessorerror(infraprocessor, ex)
             self._undo_create_node(infraprocessor, ex.instance_data)
         except CriticalInfraProcessorError as ex:
@@ -62,7 +62,7 @@ class Strategy(factory.MultiBackend):
        try:
            undo_command.perform(infraprocessor)
        except Exception:
-           # TODO: maybe store instance_data in case it's stuck?
+           # TODO: maybe store instance_data in UDS in case it's stuck?
            log.exception(
                'IGNORING error while dropping partially started node')
 
