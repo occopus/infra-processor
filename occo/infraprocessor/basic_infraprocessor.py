@@ -76,6 +76,7 @@ class CreateNode(Command):
         node_description = self.node_description
         instance_data = dict(
             node_id=str(uuid.uuid4()),
+            infra_id=node_description['infra_id'],
             user_id=node_description['user_id'],
             node_description=node_description,
         )
