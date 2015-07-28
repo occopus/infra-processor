@@ -85,6 +85,12 @@ class CreateNode(Command):
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             self._undo_create_node(infraprocessor, instance_data)
+        except NodeCreationError as ex:
+            # Amend a node creation error iff it couldn't have been initialized
+            # properly at the point of raising it.
+            if not hasattr(ex, 'instance_data'):
+                ex.instance_data = instance_data
+            raise
         except InfraProcessorError:
             # This is a pre-cooked exception, no need for transformation
             raise
