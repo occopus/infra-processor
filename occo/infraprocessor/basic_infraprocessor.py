@@ -73,25 +73,6 @@ class CreateNode(Command):
         self.node_description = node_description
 
     def perform(self, infraprocessor):
-        """
-        Start the node.
-
-        This implementation is **incomplete**. We need to:
-
-        .. todo:: Handle errors when creating the node (if necessary; it is
-            possible that they are best handled in the InfraProcessor itself).
-
-        .. warning:: Does the parallelized strategy propagate errors
-            properly? Must verify!
-
-        .. todo::
-            Handle all known possible statuses
-
-        .. todo:: We synchronize on the node becoming completely ready
-            (started, configured). We need a **timeout** on this.
-
-        """
-
         node_description = self.node_description
         instance_data = dict(
             node_id=str(uuid.uuid4()),
