@@ -13,7 +13,7 @@ definition can choose.
 
 """
 
-__all__ = ['wait_for_node', 'NodeSynchStrategy', 'NodeSynchTimeout',
+__all__ = ['wait_for_node', 'NodeSynchStrategy',
            'node_synch_type', 'get_synch_strategy']
 
 import logging
@@ -25,9 +25,6 @@ import occo.infobroker
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 ib = occo.infobroker.main_info_broker
-
-class NodeSynchTimeout(Exception):
-    pass
 
 import time
 def sleep(timeout, cancel_event):
