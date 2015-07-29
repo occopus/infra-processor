@@ -26,7 +26,7 @@ import occo.infobroker
 log = logging.getLogger('occo.infraprocessor.synchronization')
 ib = occo.infobroker.main_info_broker
 
-import time
+import time, datetime
 def sleep(timeout, cancel_event):
     """
     Sleeps  until the timeout is reached, or until cancelled through
@@ -96,10 +96,18 @@ def wait_for_node(instance_data,
     synch = get_synch_strategy(instance_data)
 
     node_id = instance_data['node_id']
-    log.info('Waiting for node %r to become ready.', node_id)
 
     if timeout:
-        finish_time = time.time() + timeout
+        start_time = time.time()
+        finish_time = start_time + timeout
+        log.info(('Waiting for node %r to become ready with '
+                  '%d seconds timeout. Deadline: %s'),
+                 node_id,
+                 timeout,
+                 datetime.datetime.fromtimestamp(finish_time).isoformat())
+    else:
+        log.info('Waiting for node %r to become ready. No timeout.', node_id)
+
     while not synch.is_ready():
         if timeout and time.time()>finish_time:
             raise NodeCreationTimeOutError(
