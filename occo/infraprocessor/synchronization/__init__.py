@@ -21,8 +21,10 @@ import occo.util as util
 from occo.exceptions.orchestration import *
 import occo.util.factory as factory
 import occo.constants.status as node_status
+import occo.infobroker
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
+ib = occo.infobroker.main_info_broker
 
 class NodeSynchTimeout(Exception):
     pass
@@ -125,7 +127,6 @@ class NodeSynchStrategy(factory.MultiBackend):
         self.resolved_node_definition = resolved_node_definition
         self.instance_data = instance_data
         import occo.infobroker
-        self.ib = occo.infobroker.main_info_broker
         self.node_id = instance_data['node_id']
         self.infra_id = resolved_node_definition['infra_id']
 
@@ -146,7 +147,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     @status_component('Backend status', basic_status)
     def status_ready(self):
         log.debug('Checking node status for %r', self.node_id)
-        status = self.ib.get('node.state', self.instance_data)
+        status = ib.get('node.state', self.instance_data)
         log.info('Status of node %r is %r', self.node_id, status)
         return status == node_status.READY
 
@@ -167,12 +168,12 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def make_node_spec(self):
         return dict(infra_id=self.infra_id, node_id=self.node_id)
     def get_node_address(self):
-        return self.ib.get('node.address', **self.make_node_spec())
+        return ib.get('node.address', **self.make_node_spec())
 
     def resolve_url(self, fmt):
         data = dict(
             node_id=self.instance_data['node_id'],
-            ibget=self.ib.get,
+            ibget=ib.get,
             instance_data=self.instance_data,
             variables=self.node_description['variables'],
             addr=self.get_node_address(),
@@ -185,7 +186,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def reachable(self):
         if self.get_kwargs().get('ping', True):
             log.debug('Checking node reachability (%s)', self.node_id)
-            return self.ib.get('synch.node_reachable', **self.make_node_spec())
+            return ib.get('synch.node_reachable', **self.make_node_spec())
         else:
             log.debug('Skipping.')
             return True
@@ -196,7 +197,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         for fmt in urls:
             url = self.resolve_url(fmt)
             log.debug('Checking URL availability: %r', url)
-            available = self.ib.get('synch.site_available', url)
+            available = ib.get('synch.site_available', url)
             if not available:
                 log.info('Site %r is still not available.', url)
                 return False
@@ -212,7 +213,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
             # Nothing to synchronize upon
             return True
 
-        ib, node_id = self.ib, self.node_id
+        node_id = self.node_id
 
         for attribute in synch_attrs:
             log.debug('Checking attribute availability: %r.', attribute)
