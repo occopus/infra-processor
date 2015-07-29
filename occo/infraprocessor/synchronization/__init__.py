@@ -20,6 +20,7 @@ import logging
 import occo.util as util
 from occo.exceptions.orchestration import *
 import occo.util.factory as factory
+import occo.constants.status as node_status
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 
@@ -147,7 +148,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         log.debug('Checking node status for %r', self.node_id)
         status = self.ib.get('node.state', self.instance_data)
         log.info('Status of node %r is %r', self.node_id, status)
-        return 'ready' == status
+        return status == node_status.READY
 
     def get_kwargs(self):
         """
