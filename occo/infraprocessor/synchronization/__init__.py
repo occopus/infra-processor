@@ -108,6 +108,10 @@ def wait_for_node(instance_data,
                     msg=('Timeout ({0}s) in node creation!'
                          .format(timeout)))
 
+        status = ib.get('node.state', self.instance_data)
+        if status in [node_status.SHUTDOWN, node_status.FAIL]:
+            raise NodeFailedError(self.instance_data, state)
+
         log.debug('Node %r is not ready, waiting %r seconds.',
                   node_id, poll_delay)
         if not sleep(poll_delay, cancel_event):
