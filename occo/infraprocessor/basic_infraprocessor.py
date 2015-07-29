@@ -14,6 +14,7 @@ import logging
 import occo.util.factory as factory
 import occo.infobroker as ib
 from occo.infraprocessor.node_resolution.resolution import resolve_node
+import sys
 import uuid
 import yaml
 from occo.infraprocessor.infraprocessor import InfraProcessor, Command
@@ -54,7 +55,9 @@ class CreateInfrastructure(Command):
         except Exception as ex:
             log.exception('Error while creating infrastructure %r:',
                           self.infra_id)
-            raise InfrastructureCreationError(self.infra_id, ex)
+            raise InfrastructureCreationError(self.infra_id, ex), \
+                None, sys.exc_info()[2]
+
 
     def _undo_create_infra(self, infraprocessor):
         log.warning('SKIPPING undoing infrastructure creation: not implemented.')
@@ -100,7 +103,7 @@ class CreateNode(Command):
         except Exception as ex:
             log.exception('Error while creating node %r:',
                           instance_data['node_id'])
-            raise NodeCreationError(instance_data, ex)
+            raise NodeCreationError(instance_data, ex), None, sys.exc_info()[2]
         else:
             log.info("Node %s/%s/%s has started",
                      node_description['infra_id'],
@@ -184,10 +187,10 @@ class DropNode(Command):
         except Exception as ex:
             log.exception('Error while dropping node %r:',
                           instance_data['node_id'])
-            raise MinorInfraProcessorError(
-                self.instance_data['infra_id'],
-                ex,
-                instance_data=self.instance_data)
+            raise MinorInfraProcessorError(self.instance_data['infra_id'],
+                                           ex,
+                                           instance_data=self.instance_data), \
+                None, sys.exc_info()[2]
 
 class DropInfrastructure(Command):
     """
@@ -212,7 +215,8 @@ class DropInfrastructure(Command):
         except Exception as ex:
             log.exception('Error while dropping infrastructure %r:',
                           self.infra_id)
-            raise MinorInfraProcessorError(self.infra_id, ex)
+            raise MinorInfraProcessorError(self.infra_id, ex), \
+                None, sys.exc_info()[2]
 
 ####################
 ## IP implementation
