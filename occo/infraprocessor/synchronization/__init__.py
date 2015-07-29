@@ -108,7 +108,7 @@ def wait_for_node(instance_data,
                     msg=('Timeout ({0}s) in node creation!'
                          .format(timeout)))
 
-        status = ib.get('node.state', self.instance_data)
+        status = ib.get('node.state', instance_data)
         if status in [node_status.SHUTDOWN, node_status.FAIL]:
             raise NodeFailedError(self.instance_data, state)
 
