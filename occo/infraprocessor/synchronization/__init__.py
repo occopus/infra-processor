@@ -103,10 +103,11 @@ def wait_for_node(instance_data,
     while not synch.is_ready():
         if timeout and time.time()>finish_time:
             raise NodeCreationTimeOutError(
-                    instance_data = instance_data,
-                    reason = None,
-                    msg = 'Timeout ({0}s) in node creation!'.
-                        format(timeout))
+                    instance_data=instance_data,
+                    reason=None,
+                    msg=('Timeout ({0}s) in node creation!'
+                         .format(timeout)))
+
         log.debug('Node %r is not ready, waiting %r seconds.',
                   node_id, poll_delay)
         if not sleep(poll_delay, cancel_event):
