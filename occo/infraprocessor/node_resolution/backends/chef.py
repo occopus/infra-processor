@@ -164,7 +164,7 @@ class ChefCloudinitResolver(Resolver):
         template = self.extract_template(node_definition)
         return template.render(**template_data)
 
-    def resolve_node(self, node_definition):
+    def _resolve_node(self, node_definition):
         """
         Implementation of :meth:`Resolver.resolve_node`.
         """

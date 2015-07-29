@@ -99,7 +99,7 @@ def wait_for_node(instance_data,
     log.info('Waiting for node %r to become ready.', node_id)
 
     if timeout:
-        finish_time = time.time()+timeout
+        finish_time = time.time() + timeout
     while not synch.is_ready():
         if timeout and time.time()>finish_time:
             raise NodeCreationTimeOutError(

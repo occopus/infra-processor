@@ -126,7 +126,10 @@ class CreateNode(Command):
 
         # Resolve all the information required to instantiate the node using
         # the abstract description and the UDS/infobroker
-        resolved_node_def = resolve_node(ib, node_id, node_description)
+        resolved_node_def = resolve_node(
+            ib, node_id, node_description,
+            getattr(infraprocessor, 'default_timeout', None)
+        )
         log.debug("Resolved node description:\n%s",
                   yaml.dump(resolved_node_def, default_flow_style=False))
         instance_data['resolved_node_definition'] = resolved_node_def
@@ -152,8 +155,9 @@ class CreateNode(Command):
             ib.get('node.resource.address', instance_data),
             ib.get('node.resource.ip_address', instance_data))
 
-        # TODO Add timeout
-        synch.wait_for_node(instance_data, infraprocessor.poll_delay)
+        synch.wait_for_node(instance_data,
+                            infraprocessor.poll_delay,
+                            resolved_node_definition['create_timeout'])
 
         return instance_data
 
