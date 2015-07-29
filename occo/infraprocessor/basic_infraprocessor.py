@@ -157,7 +157,7 @@ class CreateNode(Command):
 
         synch.wait_for_node(instance_data,
                             infraprocessor.poll_delay,
-                            resolved_node_definition['create_timeout'])
+                            resolved_node_def['create_timeout'])
 
         return instance_data
 
