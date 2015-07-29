@@ -14,6 +14,7 @@ import logging
 import occo.util.factory as factory
 import occo.infobroker as ib
 from occo.infraprocessor.node_resolution.resolution import resolve_node
+import sys
 import uuid
 import yaml
 from occo.infraprocessor.infraprocessor import InfraProcessor, Command
@@ -54,7 +55,9 @@ class CreateInfrastructure(Command):
         except Exception as ex:
             log.exception('Error while creating infrastructure %r:',
                           self.infra_id)
-            raise InfrastructureCreationError(self.infra_id, ex)
+            raise InfrastructureCreationError(self.infra_id, ex), \
+                None, sys.exc_info()[2]
+
 
     def _undo_create_infra(self, infraprocessor):
         log.warning('SKIPPING undoing infrastructure creation: not implemented.')
@@ -100,7 +103,7 @@ class CreateNode(Command):
         except Exception as ex:
             log.exception('Error while creating node %r:',
                           instance_data['node_id'])
-            raise NodeCreationError(instance_data, ex)
+            raise NodeCreationError(instance_data, ex), None, sys.exc_info()[2]
         else:
             log.info("Node %s/%s/%s has started",
                      node_description['infra_id'],
@@ -123,7 +126,10 @@ class CreateNode(Command):
 
         # Resolve all the information required to instantiate the node using
         # the abstract description and the UDS/infobroker
-        resolved_node_def = resolve_node(ib, node_id, node_description)
+        resolved_node_def = resolve_node(
+            ib, node_id, node_description,
+            getattr(infraprocessor, 'default_timeout', None)
+        )
         log.debug("Resolved node description:\n%s",
                   yaml.dump(resolved_node_def, default_flow_style=False))
         instance_data['resolved_node_definition'] = resolved_node_def
@@ -149,8 +155,9 @@ class CreateNode(Command):
             ib.get('node.resource.address', instance_data),
             ib.get('node.resource.ip_address', instance_data))
 
-        # TODO Add timeout
-        synch.wait_for_node(instance_data, infraprocessor.poll_delay)
+        synch.wait_for_node(instance_data,
+                            infraprocessor.poll_delay,
+                            resolved_node_def['create_timeout'])
 
         return instance_data
 
@@ -184,10 +191,10 @@ class DropNode(Command):
         except Exception as ex:
             log.exception('Error while dropping node %r:',
                           instance_data['node_id'])
-            raise MinorInfraProcessorError(
-                self.instance_data['infra_id'],
-                ex,
-                instance_data=self.instance_data)
+            raise MinorInfraProcessorError(self.instance_data['infra_id'],
+                                           ex,
+                                           instance_data=self.instance_data), \
+                None, sys.exc_info()[2]
 
 class DropInfrastructure(Command):
     """
@@ -212,7 +219,8 @@ class DropInfrastructure(Command):
         except Exception as ex:
             log.exception('Error while dropping infrastructure %r:',
                           self.infra_id)
-            raise MinorInfraProcessorError(self.infra_id, ex)
+            raise MinorInfraProcessorError(self.infra_id, ex), \
+                None, sys.exc_info()[2]
 
 ####################
 ## IP implementation

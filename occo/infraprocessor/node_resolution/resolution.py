@@ -25,7 +25,7 @@ import occo.util.factory as factory
 
 log = logging.getLogger('occo.infraprocessor.node_resolution')
 
-def resolve_node(ib, node_id, node_description):
+def resolve_node(ib, node_id, node_description, default_timeout=None):
     """
     Resolve node description
 
@@ -48,7 +48,9 @@ def resolve_node(ib, node_id, node_description):
         node_definition['implementation_type'],
         info_broker=ib,
         node_id=node_id,
-        node_description=node_description)
+        node_description=node_description,
+        default_timeout=default_timeout
+    )
 
     resolver.resolve_node(node_definition)
     return node_definition
@@ -69,12 +71,26 @@ class Resolver(factory.MultiBackend):
     :param node_description: The original node description.
     :type node_description: :ref:`Node Description <nodedescription>`
     """
-    def __init__(self, info_broker, node_id, node_description):
+    def __init__(self, info_broker, node_id, node_description,
+                 default_timeout=None):
         self.info_broker = info_broker
         self.node_id = node_id
         self.node_description = node_description
+        self.default_timeout = default_timeout
+
+    def determine_timeout(self, node_definition):
+        import occo.util
+        return occo.util.coalesce(
+            self.node_description.get('create_timeout'),
+            node_definition.get('create_timeout'),
+            self.default_timeout)
 
     def resolve_node(self, node_definition):
+        self._resolve_node(node_definition)
+        node_definition['create_timeout'] = \
+            self.determine_timeout(node_definition)
+
+    def _resolve_node(self, node_definition):
         """
         Overriden in a sub-class, ``node_definition`` should be updated
         in-place with the necessary information. ``node_definition`` is also
@@ -98,7 +114,7 @@ class IdentityResolver(Resolver):
 
     This resolver returns the node_definition as-is.
     """
-    def resolve_node(self, node_definition):
+    def _resolve_node(self, node_definition):
         """
         Implementation of :meth:`Resolver.resolve_node`.
         """
