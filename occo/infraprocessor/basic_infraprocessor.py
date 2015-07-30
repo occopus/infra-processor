@@ -81,12 +81,18 @@ class CreateNode(Command):
 
     def perform(self, infraprocessor):
         node_description = self.node_description
+
+        log.debug('Performing CreateNode on node {\n%s}',
+                  yaml.dump(node_description, default_flow_style=False))
+
         instance_data = dict(
             node_id=str(uuid.uuid4()),
             infra_id=node_description['infra_id'],
             user_id=node_description['user_id'],
             node_description=node_description,
         )
+
+        log.info('Creating node with id %r', instance_data['node_id'])
 
         try:
             self._perform_create(infraprocessor, instance_data)
@@ -124,9 +130,6 @@ class CreateNode(Command):
         ib = infraprocessor.ib
         node_description = self.node_description
 
-        log.debug('Performing CreateNode on node {\n%s}',
-                  yaml.dump(node_description, default_flow_style=False))
-
         # Resolve all the information required to instantiate the node using
         # the abstract description and the UDS/infobroker
         resolved_node_def = resolve_node(
@@ -145,18 +148,29 @@ class CreateNode(Command):
 
         import occo.infraprocessor.synchronization as synch
 
+        log.debug('Registering node instance_data for node %s/%s/%s',
+                  node_description['infra_id'],
+                  node_description['name'],
+                  instance_data['node_id'])
         infraprocessor.uds.register_started_node(
             node_description['infra_id'],
             node_description['name'],
             instance_data)
 
         log.info(
-            "Node %s/%s/%s received address: %r (%s)",
+            "Node %s/%s/%s has been started successfully",
+            node_description['infra_id'],
+            node_description['name'],
+            node_id
+        )
+        log.info(
+            "Address of node %s/%s/%s: %r (%s)",
             node_description['infra_id'],
             node_description['name'],
             node_id,
             ib.get('node.resource.address', instance_data),
-            ib.get('node.resource.ip_address', instance_data))
+            ib.get('node.resource.ip_address', instance_data)
+        )
 
         synch.wait_for_node(instance_data,
                             infraprocessor.poll_delay,
