@@ -49,6 +49,7 @@ class Strategy(factory.MultiBackend):
         try:
             return self._perform(infraprocessor, instruction_list)
         except KeyboardInterrupt:
+            log.debug('Received KeyboardInterrupt; cancelling pending tasks')
             self.cancel_pending()
             raise
         except NodeCreationError as ex:
@@ -107,6 +108,8 @@ class SequentialStrategy(Strategy):
         self.cancelled = True
 
     def _perform(self, infraprocessor, instruction_list):
+        log.debug('Peforming instructions SEQUENTIALLY: %r',
+                  instruction_list)
         results = list()
         for i in instruction_list:
             if self.cancelled:

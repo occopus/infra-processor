@@ -43,6 +43,7 @@ class CreateInfrastructure(Command):
 
     def perform(self, infraprocessor):
         try:
+            log.debug('Creating infrastructure %r', self.infra_id)
             return infraprocessor.servicecomposer.create_infrastructure(
                 self.infra_id)
         except KeyboardInterrupt:
@@ -180,6 +181,7 @@ class DropNode(Command):
 
     def perform(self, infraprocessor):
         try:
+            log.debug('Dropping node %r', self.instance_data['node_id'])
             infraprocessor.cloudhandler.drop_node(self.instance_data)
             infraprocessor.servicecomposer.drop_node(self.instance_data)
         except KeyboardInterrupt:
@@ -209,6 +211,7 @@ class DropInfrastructure(Command):
 
     def perform(self, infraprocessor):
         try:
+            log.debug('Dropping infrastructure %r', self.infra_id)
             infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
