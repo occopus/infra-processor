@@ -275,8 +275,8 @@ class BasicInfraProcessor(InfraProcessor):
     def cri_create_node(self, node_description):
         return CreateNode(node_description)
 
-    def cri_drop_node(self, node_id):
-        return DropNode(node_id)
+    def cri_drop_node(self, instance_data):
+        return DropNode(instance_data)
 
     def cri_drop_infrastructure(self, infra_id):
         return DropInfrastructure(infra_id)
