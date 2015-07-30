@@ -43,6 +43,7 @@ class CreateInfrastructure(Command):
 
     def perform(self, infraprocessor):
         try:
+            log.debug('Creating infrastructure %r', self.infra_id)
             return infraprocessor.servicecomposer.create_infrastructure(
                 self.infra_id)
         except KeyboardInterrupt:
@@ -60,7 +61,9 @@ class CreateInfrastructure(Command):
 
 
     def _undo_create_infra(self, infraprocessor):
-        log.warning('SKIPPING undoing infrastructure creation: not implemented.')
+        log.info('UNDOING infrastructure creation: %r', self.infra_id)
+        cmd = infraprocessor.cri_drop_infrastructure(self.infra_id)
+        infraprocessor.push_instructions(cmd)
 
 class CreateNode(Command):
     """
@@ -162,7 +165,9 @@ class CreateNode(Command):
         return instance_data
 
     def _undo_create_node(self, infraprocessor, instance_data):
-        log.warning('SKIPPING undoing node creation: not implemented.')
+        log.info('UNDOING node creation: %r', instance_data['node_id'])
+        cmd = infraprocessor.cri_drop_node(instance_data)
+        infraprocessor.push_instructions(cmd)
 
 class DropNode(Command):
     """
@@ -180,6 +185,7 @@ class DropNode(Command):
 
     def perform(self, infraprocessor):
         try:
+            log.debug('Dropping node %r', self.instance_data['node_id'])
             infraprocessor.cloudhandler.drop_node(self.instance_data)
             infraprocessor.servicecomposer.drop_node(self.instance_data)
         except KeyboardInterrupt:
@@ -190,7 +196,7 @@ class DropNode(Command):
             raise
         except Exception as ex:
             log.exception('Error while dropping node %r:',
-                          instance_data['node_id'])
+                          self.instance_data['node_id'])
             raise MinorInfraProcessorError(self.instance_data['infra_id'],
                                            ex,
                                            instance_data=self.instance_data), \
@@ -209,6 +215,7 @@ class DropInfrastructure(Command):
 
     def perform(self, infraprocessor):
         try:
+            log.debug('Dropping infrastructure %r', self.infra_id)
             infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
@@ -270,8 +277,8 @@ class BasicInfraProcessor(InfraProcessor):
     def cri_create_node(self, node_description):
         return CreateNode(node_description)
 
-    def cri_drop_node(self, node_id):
-        return DropNode(node_id)
+    def cri_drop_node(self, instance_data):
+        return DropNode(instance_data)
 
     def cri_drop_infrastructure(self, infra_id):
         return DropInfrastructure(infra_id)
