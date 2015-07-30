@@ -61,7 +61,9 @@ class CreateInfrastructure(Command):
 
 
     def _undo_create_infra(self, infraprocessor):
-        log.warning('SKIPPING undoing infrastructure creation: not implemented.')
+        #log.warning('SKIPPING undoing infrastructure creation: not implemented.')
+        cmd = infraprocessor.cri_drop_infrastructure(self.infra_id)
+        infraprocessor.push_instructions(cmd)
 
 class CreateNode(Command):
     """
