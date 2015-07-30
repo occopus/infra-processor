@@ -108,6 +108,7 @@ class SequentialStrategy(Strategy):
         self.cancelled = True
 
     def _perform(self, infraprocessor, instruction_list):
+        self.cancelled = False
         log.debug('Peforming instructions SEQUENTIALLY: %r',
                   instruction_list)
         results = list()
