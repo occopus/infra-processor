@@ -192,7 +192,7 @@ class DropNode(Command):
             raise
         except Exception as ex:
             log.exception('Error while dropping node %r:',
-                          instance_data['node_id'])
+                          self.instance_data['node_id'])
             raise MinorInfraProcessorError(self.instance_data['infra_id'],
                                            ex,
                                            instance_data=self.instance_data), \
