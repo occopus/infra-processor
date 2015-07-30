@@ -99,7 +99,7 @@ class DummyInfoBroker(ib.InfoRouter):
         nodelist_repr = lambda nodelist: ', '.join(
             "{0}_{1}".format(n['node_id'], n.get('_started', False))
             for n in nodelist)
-        envlist_repr = list('%s:[%s]'%(k, nodelist_repr(v))
+        envlist_repr = list('{0}:[{1}]'.format(k, nodelist_repr(v))
                             for (k, v) in self.environments.iteritems())
         return ' '.join(envlist_repr)
 
@@ -113,7 +113,7 @@ class DummyServiceComposer(object):
         log.debug("[SC] Done - '%r'", self.ib)
     def drop_node(self, node):
         node_id = node['node_id']
-        log.debug("[SC] Dropping node '%s'", node_id)
+        log.debug("[SC] Dropping node %r", node_id)
         node = self.ib.node_lookup[node_id]
         infra_id = node['infra_id']
         self.ib.environments[infra_id] = list(
@@ -123,11 +123,11 @@ class DummyServiceComposer(object):
         log.debug("[SC] Done - '%r'", self.ib)
 
     def create_infrastructure(self, infra_id):
-        log.debug("[SC] Creating environment '%s'", infra_id)
+        log.debug("[SC] Creating environment %r", infra_id)
         self.ib.environments.setdefault(infra_id, [])
         log.debug("[SC] Done - '%r'", self.ib)
     def drop_infrastructure(self, infra_id):
-        log.debug("[SC] Dropping environment '%s'", infra_id)
+        log.debug("[SC] Dropping environment %r", infra_id)
         del self.ib.environments[infra_id]
         log.debug("[SC] Done - '%r'", self.ib)
 
@@ -141,7 +141,7 @@ class DummyCloudHandler(object):
 
     def drop_node(self, node):
         node_id = node['node_id']
-        log.debug("[CH] Dropping node '%s'", node_id)
+        log.debug("[CH] Dropping node %r", node_id)
         node = self.ib.node_lookup[node_id]
         node['_started'] = False
         log.debug("[SC] Done - '%r'", self.ib)

@@ -26,7 +26,7 @@ class LocalTest(unittest.TestCase):
         eid = uid()
         cmd = infrap.cri_create_infrastructure(eid)
         infrap.push_instructions(cmd)
-        self.assertEqual(repr(self.ib), '%s:[]'%eid)
+        self.assertEqual(repr(self.ib), '{0}:[]'.format(eid))
     def test_create_node(self):
         infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
@@ -36,7 +36,9 @@ class LocalTest(unittest.TestCase):
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
         node = infrap.push_instructions(cmd_crn)[0]
-        self.assertEqual(repr(self.ib), '%s:[%s_True]'%(eid, node['node_id']))
+        self.assertEqual(
+            repr(self.ib),
+            '{0}:[{1}_True]'.format(eid, node['node_id']))
     def test_drop_node(self):
         infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
@@ -48,7 +50,7 @@ class LocalTest(unittest.TestCase):
         node = infrap.push_instructions(cmd_crn)[0]
         cmd_rmn = infrap.cri_drop_node(node)
         infrap.push_instructions(cmd_rmn)
-        self.assertEqual(repr(self.ib), '%s:[]'%eid)
+        self.assertEqual(repr(self.ib), '{0}:[]'.format(eid))
     def test_drop_infrastructure(self):
         infrap = ip.InfraProcessor.instantiate(
             'basic', self.uds, self.ch, self.sc)
