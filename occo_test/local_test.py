@@ -46,7 +46,7 @@ class LocalTest(unittest.TestCase):
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
         node = infrap.push_instructions(cmd_crn)[0]
-        cmd_rmn = infrap.cri_drop_node(node['node_id'])
+        cmd_rmn = infrap.cri_drop_node(node)
         infrap.push_instructions(cmd_rmn)
         self.assertEqual(repr(self.ib), '%s:[]'%eid)
     def test_drop_infrastructure(self):
@@ -58,7 +58,7 @@ class LocalTest(unittest.TestCase):
         cmd_crn = infrap.cri_create_node(node)
         infrap.push_instructions(cmd_cre)
         node = infrap.push_instructions(cmd_crn)[0]
-        cmd_rmn = infrap.cri_drop_node(node['node_id'])
+        cmd_rmn = infrap.cri_drop_node(node)
         cmd_rme = infrap.cri_drop_infrastructure(eid)
         infrap.push_instructions(cmd_rmn)
         infrap.push_instructions(cmd_rme)

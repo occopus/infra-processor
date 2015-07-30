@@ -111,7 +111,8 @@ class DummyServiceComposer(object):
         self.ib.environments[node['infra_id']].append(node)
         self.ib.node_lookup[node['node_id']] = node
         log.debug("[SC] Done - '%r'", self.ib)
-    def drop_node(self, node_id):
+    def drop_node(self, node):
+        node_id = node['node_id']
         log.debug("[SC] Dropping node '%s'", node_id)
         node = self.ib.node_lookup[node_id]
         infra_id = node['infra_id']
@@ -138,7 +139,8 @@ class DummyCloudHandler(object):
         node['_started'] = True
         log.debug("[SC] Done - '%r'", self.ib)
 
-    def drop_node(self, node_id):
+    def drop_node(self, node):
+        node_id = node['node_id']
         log.debug("[CH] Dropping node '%s'", node_id)
         node = self.ib.node_lookup[node_id]
         node['_started'] = False
