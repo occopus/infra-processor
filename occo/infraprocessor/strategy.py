@@ -129,8 +129,8 @@ class PerformProcess(multiprocessing.Process):
     Process object used by :class:`ParallelProcessesStrategy` to perform a
     single command.
     """
-    def __init__(self, infraprocessor, instruction):
-        super(PerformProcess, self).__init__(target=self.run)
+    def __init__(self, procname, infraprocessor, instruction):
+        super(PerformProcess, self).__init__(name=procname,target=self.run)
         self.infraprocessor = infraprocessor
         self.instruction = instruction
 
@@ -151,7 +151,21 @@ class ParallelProcessesStrategy(Strategy):
     """
 
     def _perform(self, infraprocessor, instruction_list):
-        processes = [PerformProcess(infraprocessor, i) for i in instruction_list]
+        processes=list()
+        for ind, i in enumerate(instruction_list):
+
+            def f():
+                yield getattr(i, 'infra_id', None)
+                yield getattr(i, 'instance_data', dict()).get('node_id')
+                yield getattr(i, 'node_description', dict()).get('name')
+                yield 'noID'
+
+            strid = util.icoalesce(f())
+            processes.append(
+                    PerformProcess(
+                        'Proc{0}-{1}'.format(i.__class__.__name__,strid),
+                        infraprocessor, 
+                        i))
         # Start all processes
         for p in processes:
             log.debug('Starting process for %r', p.instruction)
