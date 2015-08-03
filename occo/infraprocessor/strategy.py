@@ -13,7 +13,7 @@ __all__ = ['Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy']
 import logging
 import occo.util as util
 import occo.util.factory as factory
-import threading
+import multiprocessing
 from occo.exceptions.orchestration import *
 
 log = logging.getLogger('occo.infraprocessor.strategy')
@@ -124,21 +124,21 @@ class SequentialStrategy(Strategy):
                 results.append(result)
         return results
 
-class PerformThread(threading.Thread):
+class PerformProcess(multiprocessing.Process):
     """
-    Thread object used by :class:`ParallelProcessesStrategy` to perform a
+    Process object used by :class:`ParallelProcessesStrategy` to perform a
     single command.
     """
-    def __init__(self, infraprocessor, instruction):
-        super(PerformThread, self).__init__()
+    def __init__(self, procname, infraprocessor, instruction):
+        super(PerformProcess, self).__init__(name=procname,target=self.run)
         self.infraprocessor = infraprocessor
         self.instruction = instruction
 
     def run(self):
         try:
-            self.result = self.instruction.perform(self.infraprocessor)
+            return self.instruction.perform(self.infraprocessor)
         except BaseException:
-            log.exception("Unhandled exception in thread:")
+            log.exception("Unhandled exception in process:")
 
 @factory.register(Strategy, 'parallel')
 class ParallelProcessesStrategy(Strategy):
@@ -151,16 +151,32 @@ class ParallelProcessesStrategy(Strategy):
     """
 
     def _perform(self, infraprocessor, instruction_list):
-        threads = [PerformThread(infraprocessor, i) for i in instruction_list]
-        # Start all threads
-        for t in threads:
-            log.debug('Starting thread for %r', t.instruction)
-            t.start()
-            log.debug('STARTED Thread for %r', t.instruction)
+        processes=list()
+        for ind, i in enumerate(instruction_list):
+
+            def f():
+                yield getattr(i, 'infra_id', None)
+                yield getattr(i, 'instance_data', dict()).get('node_id')
+                yield getattr(i, 'node_description', dict()).get('name')
+                yield 'noID'
+
+            strid = util.icoalesce(f())
+            processes.append(
+                    PerformProcess(
+                        'Proc{0}-{1}'.format(i.__class__.__name__,strid),
+                        infraprocessor, 
+                        i))
+        # Start all processes
+        for p in processes:
+            log.debug('Starting process for %r', p.instruction)
+            p.start()
+            log.debug('STARTED process for %r', p.instruction)
         results = list()
         # Wait for results
-        for t in threads:
-            log.debug('Joining thread for %r', t.instruction)
-            t.join()
-            log.debug('FINISHED Thread for %r', t.instruction)
-            results.append(t.result)
+        for p in processes:
+            log.debug('Starting process for %r', p.instruction)
+            p.join()
+            log.debug('FINISHED Process for %r', p.instruction)
+            #log.debug('RESULT received %r', p.result)
+            #results.append(p.result)
+
