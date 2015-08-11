@@ -55,6 +55,7 @@ class InfraProcessor(factory.MultiBackend):
     """
     def __init__(self, process_strategy):
         self.strategy = Strategy.from_config(process_strategy)
+        log.debug('Initialized InfraProcessor with strategy %s', self.strategy)
         self.cancelled_until = 0
 
     def __enter__(self):
@@ -127,6 +128,7 @@ class InfraProcessor(factory.MultiBackend):
             performing the commands that has been created before this time.
         :type deadline: :class:`int`, unix timestamp
         """
+        log.info('Cancelling pending instructions')
         if deadline is None:
             # TODO This default may be a problem. If a command has a timestamp
             # between NOW and NOW+1, it must be performed. But the +1 here

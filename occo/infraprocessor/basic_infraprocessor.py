@@ -96,7 +96,7 @@ class CreateNode(Command):
             node_description=node_description,
         )
 
-        log.info('Creating node with id %r', instance_data['node_id'])
+        log.info('Creating node %r', instance_data['node_id'])
 
         try:
             self._perform_create(infraprocessor, instance_data)
@@ -217,9 +217,11 @@ class DropNode(Command):
         except Exception as ex:
             log.exception('Error while dropping node %r:',
                           self.instance_data['node_id'])
-            raise MinorInfraProcessorError(self.instance_data['infra_id'],
-                                           ex,
-                                           instance_data=self.instance_data), \
+            raise \
+                MinorInfraProcessorError(
+                    self.instance_data['infra_id'],
+                    ex,
+                    instance_data=self.instance_data), \
                 None, sys.exc_info()[2]
 
 class DropInfrastructure(Command):

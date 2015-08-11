@@ -64,7 +64,8 @@ class CompositeStatus(object):
         if not lazy:
             # list() force-evaluates all items
             results = list(results)
-
+        # all() is lazy; if force-evaluation is omitted, evaluation will stop
+        # at the first False
         status = all(results)
         log.info('Status of %r: %s', tag.name, format_bool(status))
         return status
@@ -109,6 +110,7 @@ class SynchronizationProvider(ib.InfoProvider):
     @util.wet_method(True)
     def site_available(self, url, **kwargs):
         try:
+            log.debug('Checking site availability: %r', url)
             response = util.do_request(url, 'head', **kwargs)
         except (ConnectionError, HTTPTimeout, HTTPError) as ex:
             log.warning('Error accessing [%s]: %s', url, ex)
