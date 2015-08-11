@@ -135,15 +135,18 @@ class SynchronizationProvider(ib.InfoProvider):
             ready=all(r[1] for r in report),
             details=report)
 
-    def get_instance_reports(self, instances):
+    def _get_instance_reports(self, instances):
         return util.dict_map(instances, self.node_state_report)
 
     @ib.provides('infrastructure.state_report')
     @util.wet_method(DUMMY_REPORT)
     def infra_state_report(self, infra_id):
+        log.debug('Acquiring detailed infrastructure status report')
         dynamic_state = \
             ib.main_info_broker.get('infrastructure.state', infra_id)
 
-        details = util.dict_map(dynamic_state, self.get_instance_reports)
-        ready = all(i['ready'] for j in details.itervalues() for i in j.itervalues())
+        details = util.dict_map(dynamic_state, self._get_instance_reports)
+        ready = all(i['ready']
+                    for j in details.itervalues()
+                    for i in j.itervalues())
         return dict(details=details, ready=ready)
