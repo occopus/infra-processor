@@ -25,6 +25,12 @@ from occo.exceptions import ConnectionError, HTTPTimeout, HTTPError
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 
+DUMMY_REPORT = dict(
+    ready=True,
+    details={},
+    DUMMY_REPORT=True,
+)
+
 def format_bool(b):
     return 'OK' if b else 'PENDING'
 
@@ -119,7 +125,7 @@ class SynchronizationProvider(ib.InfoProvider):
             return response.success
 
     @ib.provides('node.state_report')
-    @util.wet_method(dict(dummy_state_report=True))
+    @util.wet_method(DUMMY_REPORT)
     def node_state_report(self, instance_data):
         log.debug('Acquiring detailed node status report')
         from ..synchronization import get_synch_strategy
@@ -133,7 +139,7 @@ class SynchronizationProvider(ib.InfoProvider):
         return util.dict_map(instances, self.node_state_report)
 
     @ib.provides('infrastructure.state_report')
-    @util.wet_method(dict(dummy_state_report=True))
+    @util.wet_method(DUMMY_REPORT)
     def infra_state_report(self, infra_id):
         dynamic_state = \
             ib.main_info_broker.get('infrastructure.state', infra_id)
