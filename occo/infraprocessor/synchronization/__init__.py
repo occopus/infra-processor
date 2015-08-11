@@ -118,7 +118,7 @@ def wait_for_node(instance_data,
 
         status = ib.get('node.state', instance_data)
         if status in [node_status.SHUTDOWN, node_status.FAIL]:
-            raise NodeFailedError(self.instance_data, state)
+            raise NodeFailedError(instance_data, status)
 
         log.debug('Node %r is not ready, waiting %r seconds.',
                   node_id, poll_delay)
