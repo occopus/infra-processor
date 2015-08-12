@@ -23,6 +23,7 @@ select the correct :class:`Resolver`.
 __all__ = ['resolve_node', 'Resolver']
 
 import logging
+import occo.util as util
 import occo.util.factory as factory
 
 log = logging.getLogger('occo.infraprocessor.node_resolution')
@@ -81,11 +82,15 @@ class Resolver(factory.MultiBackend):
         self.default_timeout = default_timeout
 
     def determine_timeout(self, node_definition):
-        import occo.util
-        return occo.util.coalesce(
-            self.node_description.get('create_timeout'),
-            node_definition.get('create_timeout'),
-            self.default_timeout)
+        def possible_timeouts():
+            yield 'node_desc', self.node_description.get('create_timeout')
+            yield 'node_def', node_definition.get('create_timeout')
+            yield 'config_default', self.default_timeout
+
+        src, timeout = util.find_effective_setting(possible_timeouts(), True)
+
+        log.debug('Effective timeout is %r (from %s)', timeout, src)
+        return timeout
 
     def resolve_node(self, node_definition):
         self._resolve_node(node_definition)
