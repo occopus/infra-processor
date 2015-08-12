@@ -62,15 +62,18 @@ class ChefCloudinitResolver(Resolver):
         return jinja2.Template(template)
 
     def attr_template_resolve(self, attrs, template_data):
-        if type(attrs) is dict:
+        """
+        Recursively render attributes.
+        """
+        if isinstance(attrs, dict):
             for k, v in attrs.iteritems():
                 attrs[k] = self.attr_template_resolve(v, template_data)
             return attrs
-        elif type(attrs) is list:
+        elif isinstance(attrs, list):
             for i in xrange(len(attrs)):
                 attrs[i] = self.attr_template_resolve(attrs[i], template_data)
             return attrs
-        elif type(attrs) is str:
+        elif isinstance(attrs, basestring):
             template = jinja2.Template(attrs)
             return template.render(**template_data)
         else:
