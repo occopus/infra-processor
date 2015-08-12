@@ -54,6 +54,7 @@ def resolve_node(ib, node_id, node_description, default_timeout=None):
         node_description=node_description,
         default_timeout=default_timeout
     )
+    log.debug('Resolving node using %r', resolver.__class__)
 
     resolver.resolve_node(node_definition)
     return node_definition
@@ -93,6 +94,10 @@ class Resolver(factory.MultiBackend):
         return timeout
 
     def resolve_node(self, node_definition):
+        """
+        Resolve the node definition using :meth:`_resolve_node` and then amend
+        it with universally required information (e.g. creation timeout)
+        """
         self._resolve_node(node_definition)
         node_definition['create_timeout'] = \
             self.determine_timeout(node_definition)
