@@ -211,26 +211,27 @@ class ChefCloudinitResolver(Resolver):
         """
 
         # Shorthands
-        nd = node_definition
         node_desc = self.node_description
         ib = self.info_broker
         node_id = self.node_id
         template_data = self.assemble_template_data(node_desc, node_definition)
 
         # Amend resolved node with new information
-        node_definition['node_id'] = node_id
-        node_definition['name'] = node_desc['name']
-        node_definition['infra_id'] = node_desc['infra_id']
-        node_definition['auth_data'] = \
-            ib.get('backends.auth_data',
-                   node_definition['backend_id'],
-                   node_desc['user_id'])
-        node_definition['context'] = \
-            self.render_template(node_definition, template_data)
-        node_definition['attributes'] = \
-            self.resolve_attributes(node_desc, node_definition, template_data)
-        node_definition['synch_attrs'] = \
-            self.extract_synch_attrs(node_desc)
+        data = {
+            'node_id'     : node_id,
+            'name'        : node_desc['name'],
+            'infra_id'    : node_desc['infra_id'],
+            'auth_data'   : ib.get('backends.auth_data',
+                                   node_definition['backend_id'],
+                                   node_desc['user_id']),
+            'context'     : self.render_template(node_definition,
+                                                 template_data),
+            'attributes'  : self.resolve_attributes(node_desc,
+                                                    node_definition,
+                                                    template_data),
+            'synch_attrs' : self.extract_synch_attrs(node_desc),
+        }
+        node_definition.update(data)
 
         # Check context
         self.check_template(node_definition)
