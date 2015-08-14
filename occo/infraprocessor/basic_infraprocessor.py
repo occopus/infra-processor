@@ -13,6 +13,7 @@ __all__ = ['BasicInfraProcessor',
 import logging
 import occo.util.factory as factory
 import occo.infobroker as ib
+import occo.infobroker.eventlog
 from occo.infraprocessor.node_resolution.resolution import resolve_node
 import sys
 import uuid
@@ -44,8 +45,9 @@ class CreateInfrastructure(Command):
     def perform(self, infraprocessor):
         try:
             log.debug('Creating infrastructure %r', self.infra_id)
-            return infraprocessor.servicecomposer.create_infrastructure(
+            result = infraprocessor.servicecomposer.create_infrastructure(
                 self.infra_id)
+            ib.main_eventlog.infrastructure_created(self.infra_id)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             self._undo_create_infra(infraprocessor)
@@ -58,6 +60,8 @@ class CreateInfrastructure(Command):
                           self.infra_id)
             raise InfrastructureCreationError(self.infra_id, ex), \
                 None, sys.exc_info()[2]
+        else:
+            return result
 
 
     def _undo_create_infra(self, infraprocessor):
@@ -81,6 +85,10 @@ class CreateNode(Command):
 
     def perform(self, infraprocessor):
         node_description = self.node_description
+
+        log.debug('Performing CreateNode on node {\n%s}',
+                  yaml.dump(node_description, default_flow_style=False))
+
         instance_data = dict(
             node_id=str(uuid.uuid4()),
             infra_id=node_description['infra_id'],
@@ -88,8 +96,11 @@ class CreateNode(Command):
             node_description=node_description,
         )
 
+        log.info('Creating node %r', instance_data['node_id'])
+
         try:
             self._perform_create(infraprocessor, instance_data)
+            ib.main_eventlog.node_created(instance_data)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             self._undo_create_node(infraprocessor, instance_data)
@@ -124,9 +135,6 @@ class CreateNode(Command):
         ib = infraprocessor.ib
         node_description = self.node_description
 
-        log.debug('Performing CreateNode on node {\n%s}',
-                  yaml.dump(node_description, default_flow_style=False))
-
         # Resolve all the information required to instantiate the node using
         # the abstract description and the UDS/infobroker
         resolved_node_def = resolve_node(
@@ -145,18 +153,29 @@ class CreateNode(Command):
 
         import occo.infraprocessor.synchronization as synch
 
+        log.debug('Registering node instance_data for node %s/%s/%s',
+                  node_description['infra_id'],
+                  node_description['name'],
+                  instance_data['node_id'])
         infraprocessor.uds.register_started_node(
             node_description['infra_id'],
             node_description['name'],
             instance_data)
 
         log.info(
-            "Node %s/%s/%s received address: %r (%s)",
+            "Node %s/%s/%s has been started successfully",
+            node_description['infra_id'],
+            node_description['name'],
+            node_id
+        )
+        log.info(
+            "Address of node %s/%s/%s: %r (%s)",
             node_description['infra_id'],
             node_description['name'],
             node_id,
             ib.get('node.resource.address', instance_data),
-            ib.get('node.resource.ip_address', instance_data))
+            ib.get('node.resource.ip_address', instance_data)
+        )
 
         synch.wait_for_node(instance_data,
                             infraprocessor.poll_delay,
@@ -188,6 +207,7 @@ class DropNode(Command):
             log.debug('Dropping node %r', self.instance_data['node_id'])
             infraprocessor.cloudhandler.drop_node(self.instance_data)
             infraprocessor.servicecomposer.drop_node(self.instance_data)
+            ib.main_eventlog.node_deleted(self.instance_data)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             raise
@@ -197,9 +217,11 @@ class DropNode(Command):
         except Exception as ex:
             log.exception('Error while dropping node %r:',
                           self.instance_data['node_id'])
-            raise MinorInfraProcessorError(self.instance_data['infra_id'],
-                                           ex,
-                                           instance_data=self.instance_data), \
+            raise \
+                MinorInfraProcessorError(
+                    self.instance_data['infra_id'],
+                    ex,
+                    instance_data=self.instance_data), \
                 None, sys.exc_info()[2]
 
 class DropInfrastructure(Command):
@@ -217,6 +239,7 @@ class DropInfrastructure(Command):
         try:
             log.debug('Dropping infrastructure %r', self.infra_id)
             infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
+            ib.main_eventlog.infrastructure_deleted(self.infra_id)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             raise

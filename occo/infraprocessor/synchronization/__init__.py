@@ -50,6 +50,7 @@ def node_synch_type(resolved_node_definition):
         key = synchstrat['protocol'] \
             if isinstance(synchstrat, dict) \
             else synchstrat
+        src = 'node_definitioni.synch_strategy'
         if not NodeSynchStrategy.has_backend(key):
             # If specified, but unknown, that is an error (typo or misconfig.)
             raise ValueError('Unknown synch_strategy', key)
@@ -57,11 +58,13 @@ def node_synch_type(resolved_node_definition):
         # No special synch strategy has been defined.
         # Trying a generic synch strategy for the implementation type
         key = resolved_node_definition.get('implementation_type'),
+        src = 'node_definition.implementation_type'
         if not NodeSynchStrategy.has_backend(key):
             # There is no generic synch strategy for the implementation type
             # Using default synch strategy
-            key = 'basic'
+            key, src = 'basic', 'default'
 
+    log.debug('SynchStrategy protocol is %r (from %s)', key, src)
     return key
 
 def get_synch_strategy(instance_data):
@@ -109,7 +112,7 @@ def wait_for_node(instance_data,
         log.info('Waiting for node %r to become ready. No timeout.', node_id)
 
     while not synch.is_ready():
-        if timeout and time.time()>finish_time:
+        if timeout and time.time() > finish_time:
             raise NodeCreationTimeOutError(
                     instance_data=instance_data,
                     reason=None,
@@ -129,6 +132,22 @@ def wait_for_node(instance_data,
     log.info('Node %r is ready.', node_id)
 
 class NodeSynchStrategy(factory.MultiBackend):
+    """
+    Abstract strategy to check whether a node is ready to be used.
+
+    :param node_description: The node description as provided by the Compiler.
+        It is the same as the input of the InfraProcessor's CreateNode command.
+
+    :param resolved_node_definition: The node definition as resolved by the
+        InfraProcessor. It is the same as the input of the CloudHandler and
+        ServiceComposer's CreateNode commands.
+
+    :param instance_data: The instance data as provided by the InfraProcessor
+        after successfully creating a node.
+
+    .. todo:: node_desc and resolved_node_def are a part of the instance data;
+        thus, these should be factored out to simplify this interface.
+    """
     def __init__(self,
                  node_description,
                  resolved_node_definition,
@@ -136,14 +155,24 @@ class NodeSynchStrategy(factory.MultiBackend):
         self.node_description = node_description
         self.resolved_node_definition = resolved_node_definition
         self.instance_data = instance_data
-        import occo.infobroker
         self.node_id = instance_data['node_id']
         self.infra_id = resolved_node_definition['infra_id']
 
     def generate_report(self):
+        """
+        Overridden in a derived class, generates a detailed report about the
+        nodes status.
+        """
         raise NotImplementedError()
 
     def is_ready(self):
+        """
+        Overridden in a derived class, determines if the node is ready to be
+        used: the resource is ready and the services are in working order.
+
+        As waiting for a node to become ready, the InfraProcessor will wait for
+        this method to return :data:`True`.
+        """
         raise NotImplementedError()
 
 from occo.infraprocessor.synchronization.primitives import *
@@ -151,6 +180,25 @@ basic_status = StatusTag('Generic status information')
 
 @factory.register(NodeSynchStrategy, 'basic')
 class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
+    """
+    Default synchronization strategy. This strategy ensures the following
+    properties of the node:
+      - Status (as reported by the InfoBroker)
+      - Network reachability (using ping)
+      - URLs available (using a HEAD request)
+      - Availability of attributes
+
+    Of these, only the node status is checked unconditionally. All others are
+    parameterizable.
+
+    .. todo:: synch_attrs is now a part of the node definition - it should be
+        moved to be a parameter of this NodeSynchStrategy.
+
+    .. todo:: Configuring an instance is cumbersome (see :meth:`get_kwargs` et
+        al.) It should be more user friendly.
+
+    .. todo:: URLs available: the method should be parameterizable.
+    """
     def is_ready(self):
         return self.get_composite_status(basic_status)
 
@@ -177,10 +225,14 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
     def make_node_spec(self):
         return dict(infra_id=self.infra_id, node_id=self.node_id)
+
     def get_node_address(self):
         return ib.get('node.address', **self.make_node_spec())
 
     def resolve_url(self, fmt):
+        """
+        .. todo:: Document the data that can be used in the URL template.
+        """
         data = dict(
             node_id=self.instance_data['node_id'],
             ibget=ib.get,
@@ -218,6 +270,10 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
     @status_component('Attribute Availability', basic_status)
     def attributes_ready(self):
+        """
+        .. todo:: Make this more flexible (check for specific values, match
+            regex, etc.)
+        """
         synch_attrs = self.resolved_node_definition.get('synch_attrs')
         if not synch_attrs:
             # Nothing to synchronize upon

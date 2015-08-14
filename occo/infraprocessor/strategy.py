@@ -111,14 +111,16 @@ class SequentialStrategy(Strategy):
         self.cancelled = False
         log.debug('Peforming instructions SEQUENTIALLY: %r',
                   instruction_list)
+
         results = list()
         for i in instruction_list:
             if self.cancelled:
                 break
+
             try:
                 result = i.perform(infraprocessor)
-            except MinorInfraProcessorError:
-                log.error('A non-critical error has occured, ignoring.')
+            except MinorInfraProcessorError as ex:
+                log.error('IGNORING non-critical error: %s', ex)
                 results.append(None)
             else:
                 results.append(result)
@@ -144,8 +146,6 @@ class PerformProcess(multiprocessing.Process):
 class ParallelProcessesStrategy(Strategy):
     """
     Implements :class:`Strategy`, performing the commands in a parallel manner.
-
-    .. todo:: Implement using processes instead.
 
     .. todo:: Must implement :meth:`cancel_pending` also.
     """
@@ -174,9 +174,8 @@ class ParallelProcessesStrategy(Strategy):
         results = list()
         # Wait for results
         for p in processes:
-            log.debug('Starting process for %r', p.instruction)
+            log.debug('Waiting for process %r', p.instruction)
             p.join()
             log.debug('FINISHED Process for %r', p.instruction)
             #log.debug('RESULT received %r', p.result)
             #results.append(p.result)
-

@@ -16,11 +16,14 @@ is a function of the type of the **service composer** and the type of the
 **cloud handler** used to instantiate the node. Because of this dependency,
 the resolution utilises the :mod:`Factory <occo.util.factory>` pattern to
 select the correct :class:`Resolver`.
+
+.. todo:: Remove InfoBroker parameters and use ib.main_info_broker
 """
 
 __all__ = ['resolve_node', 'Resolver']
 
 import logging
+import occo.util as util
 import occo.util.factory as factory
 
 log = logging.getLogger('occo.infraprocessor.node_resolution')
@@ -51,6 +54,7 @@ def resolve_node(ib, node_id, node_description, default_timeout=None):
         node_description=node_description,
         default_timeout=default_timeout
     )
+    log.debug('Resolving node using %r', resolver.__class__)
 
     resolver.resolve_node(node_definition)
     return node_definition
@@ -79,13 +83,21 @@ class Resolver(factory.MultiBackend):
         self.default_timeout = default_timeout
 
     def determine_timeout(self, node_definition):
-        import occo.util
-        return occo.util.coalesce(
-            self.node_description.get('create_timeout'),
-            node_definition.get('create_timeout'),
-            self.default_timeout)
+        def possible_timeouts():
+            yield 'node_desc', self.node_description.get('create_timeout')
+            yield 'node_def', node_definition.get('create_timeout')
+            yield 'config_default', self.default_timeout
+
+        src, timeout = util.find_effective_setting(possible_timeouts(), True)
+
+        log.debug('Effective timeout is %r (from %s)', timeout, src)
+        return timeout
 
     def resolve_node(self, node_definition):
+        """
+        Resolve the node definition using :meth:`_resolve_node` and then amend
+        it with universally required information (e.g. creation timeout)
+        """
         self._resolve_node(node_definition)
         node_definition['create_timeout'] = \
             self.determine_timeout(node_definition)

@@ -25,6 +25,12 @@ from occo.exceptions import ConnectionError, HTTPTimeout, HTTPError
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 
+DUMMY_REPORT = dict(
+    ready=True,
+    details={},
+    DUMMY_REPORT=True,
+)
+
 def format_bool(b):
     return 'OK' if b else 'PENDING'
 
@@ -64,7 +70,8 @@ class CompositeStatus(object):
         if not lazy:
             # list() force-evaluates all items
             results = list(results)
-
+        # all() is lazy; if force-evaluation is omitted, evaluation will stop
+        # at the first False
         status = all(results)
         log.info('Status of %r: %s', tag.name, format_bool(status))
         return status
@@ -109,6 +116,7 @@ class SynchronizationProvider(ib.InfoProvider):
     @util.wet_method(True)
     def site_available(self, url, **kwargs):
         try:
+            log.debug('Checking site availability: %r', url)
             response = util.do_request(url, 'head', **kwargs)
         except (ConnectionError, HTTPTimeout, HTTPError) as ex:
             log.warning('Error accessing [%s]: %s', url, ex)
@@ -117,35 +125,28 @@ class SynchronizationProvider(ib.InfoProvider):
             return response.success
 
     @ib.provides('node.state_report')
-    @util.wet_method(dict(dummy_state_report=True))
+    @util.wet_method(DUMMY_REPORT)
     def node_state_report(self, instance_data):
+        log.debug('Acquiring detailed node status report')
         from ..synchronization import get_synch_strategy
         strategy = get_synch_strategy(instance_data)
         report = strategy.generate_report()
-        return dict(ready=all(r[1] for r in report),
-                    details=report)
-
-    def get_instance_reports(self, instances):
         return dict(
-            (
-                node_id,
-                self.node_state_report(instance_data)
-            )
-            for node_id, instance_data in instances.iteritems()
-        )
+            ready=all(r[1] for r in report),
+            details=report)
+
+    def _get_instance_reports(self, instances):
+        return util.dict_map(instances, self.node_state_report)
 
     @ib.provides('infrastructure.state_report')
-    @util.wet_method(dict(dummy_state_report=True))
+    @util.wet_method(DUMMY_REPORT)
     def infra_state_report(self, infra_id):
+        log.debug('Acquiring detailed infrastructure status report')
         dynamic_state = \
             ib.main_info_broker.get('infrastructure.state', infra_id)
 
-        details = dict(
-            (
-                node_name,
-                self.get_instance_reports(instances)
-            )
-            for node_name, instances in dynamic_state.iteritems()
-        )
-        ready = all(i['ready'] for j in details.itervalues() for i in j.itervalues())
+        details = util.dict_map(dynamic_state, self._get_instance_reports)
+        ready = all(i['ready']
+                    for j in details.itervalues()
+                    for i in j.itervalues())
         return dict(details=details, ready=ready)
