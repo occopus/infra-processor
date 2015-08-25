@@ -14,10 +14,10 @@ setuptools.setup(
                         'occo.plugins.infraprocessor.node_resolution',
                         ],
     py_modules=[
-                'occo.infraprocessor.basic_infraprocessor',
                 'occo.infraprocessor.node_resolution',
                 'occo.infraprocessor.strategy',
                 'occo.infraprocessor.synchronization.primitives',
+                'occo.plugins.infraprocessor.basic_infraprocessor',
                 'occo.plugins.infraprocessor.node_resolution.chef_cloudinit',
     ],
     packages=[
