@@ -7,7 +7,7 @@
 import unittest
 from common import *
 import occo.infraprocessor.basic_infraprocessor as bip
-import occo.infraprocessor.infraprocessor as ip
+import occo.infraprocessor as ip
 import occo.util as util
 from occo.infobroker.uds import UDS
 from occo.infobroker.kvstore import KeyValueStore

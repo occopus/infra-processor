@@ -7,7 +7,7 @@
 import unittest
 from common import *
 import occo.infraprocessor.basic_infraprocessor
-import occo.infraprocessor.infraprocessor as ip
+import occo.infraprocessor as ip
 import occo.plugins.infraprocessor.node_resolution.chef_cloudinit
 import occo.util as util
 import threading

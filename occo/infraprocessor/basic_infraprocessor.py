@@ -18,7 +18,7 @@ from occo.infraprocessor.node_resolution import resolve_node
 import sys
 import uuid
 import yaml
-from occo.infraprocessor.infraprocessor import InfraProcessor, Command
+from occo.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
 from occo.exceptions.orchestration import *
 
