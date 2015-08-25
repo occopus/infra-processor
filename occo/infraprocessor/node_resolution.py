@@ -16,9 +16,8 @@ is a function of the type of the **service composer** and the type of the
 **cloud handler** used to instantiate the node. Because of this dependency,
 the resolution utilises the :mod:`Factory <occo.util.factory>` pattern to
 select the correct :class:`Resolver`.
-
-.. todo:: Remove InfoBroker parameters and use ib.main_info_broker
 """
+
 
 __all__ = ['resolve_node', 'Resolver']
 
