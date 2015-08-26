@@ -14,11 +14,11 @@ import logging
 import occo.util.factory as factory
 import occo.infobroker as ib
 import occo.infobroker.eventlog
-from occo.infraprocessor.node_resolution.resolution import resolve_node
+from occo.infraprocessor.node_resolution import resolve_node
 import sys
 import uuid
 import yaml
-from occo.infraprocessor.infraprocessor import InfraProcessor, Command
+from occo.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
 from occo.exceptions.orchestration import *
 
