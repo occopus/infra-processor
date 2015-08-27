@@ -68,13 +68,13 @@ class Strategy(factory.MultiBackend):
             raise
 
     def _undo_create_node(self, infraprocessor, instance_data):
-       undo_command = infraprocessor.cri_drop_node(instance_data)
-       try:
-           undo_command.perform(infraprocessor)
-       except Exception:
-           # TODO: maybe store instance_data in UDS in case it's stuck?
-           log.exception(
-               'IGNORING error while dropping partially started node')
+        undo_command = infraprocessor.cri_drop_node(instance_data)
+        try:
+            undo_command.perform(infraprocessor)
+        except Exception:
+            # TODO: maybe store instance_data in UDS in case it's stuck?
+            log.exception(
+                'IGNORING error while dropping partially started node')
 
     def _handle_infraprocessorerror(self, infraprocessor, ex):
         log.error('Strategy.perform: exception: %s', ex)
@@ -172,6 +172,7 @@ class ParallelProcessesStrategy(Strategy):
     """
     Implements :class:`Strategy`, performing the commands in a parallel manner.
     """
+
     def _possible_process_names(self, instr):
         """
         Lists the possible ids that can be used in the name of a process.
@@ -183,46 +184,58 @@ class ParallelProcessesStrategy(Strategy):
 
     def _mk_process_name(self, instr):
         """
-        Generate a process name.
+        Generate a process name based on the instruction
         """
         return 'Proc{0}-{1}'.format(
             instr.__class__.__name__,
             util.icoalesce(self._possible_process_names(instr))
         )
 
-    def _generate_processes(self, instruction_list, infraprocessor,
-                           result_queue):
+    def _add_process(self, instruction):
+        """
+        Generate a process object for this instruction and append it to the
+        existing set of processes.
+        """
+        index = len(self.results)
+        self.results.append(None)
+        self.processes[index] = \
+            PerformProcess(
+                index, self._mk_process_name(instruction),
+                self.infraprocessor, instruction, self.result_queue)
+
+    def _generate_processes(self, instruction_list):
         """
         Generate the list of :class:`multiprocessing.Process` objects to be
         started.
         """
-        return dict(
-            (index, PerformProcess(index, self._mk_process_name(instruction),
-                                   infraprocessor, instruction, result_queue))
-            for index, instruction in enumerate(instruction_list)
-        )
+        assert not getattr(self, 'processes', None)
+        self.results = list()
+        self.processes = dict()
+        for instruction in instruction_list:
+            self._add_process(instruction)
 
-    def _process_one_result(self, result_queue, processes, results):
+    def _process_one_result(self):
         """
         Wait and then process a sub-process result.
         """
         log.debug('Waiting for a sub-process to finish...')
-        procid, result, error = result_queue.get()
+        procid, result, error = self.result_queue.get()
         log.debug('Result for process %r has arrived: %r',
-                  processes[procid].name, result or error)
-        del processes[procid]
+                  self.processes[procid].name, result or error)
+
+        del self.processes[procid]
+
         if error:
             log.debug('Exception occured in sub-process:\n%s\n%r',
                       error['tbstr'], error['value'])
             raise error['type'], error['value']
         else:
-            results[procid] = result
+            self.results[procid] = result
 
     def _perform(self, infraprocessor, instruction_list):
-        result_queue = multiprocessing.Queue()
-        self.processes = self._generate_processes(
-            instruction_list, infraprocessor, result_queue)
-        results = [None] * len(instruction_list)
+        self.infraprocessor = infraprocessor
+        self.result_queue = multiprocessing.Queue()
+        self._generate_processes(instruction_list)
 
         # Start all processes
         for p in self.processes.itervalues():
@@ -233,23 +246,42 @@ class ParallelProcessesStrategy(Strategy):
         # Wait for results
         log.debug('Waiting for sub-processes to finish')
         while self.processes:
-            self._process_one_result(result_queue, self.processes, results)
+            try:
+                self._process_one_result()
+            except NodeCreationError as ex:
+                # Undoing CreateNode is done here, not inside the CreateNode
+                # command, so cancellation can be dispatched (_handle_...)
+                # *before* the faulty node is started to be undone. I.e.: the
+                # order of the following two lines matters:
+                self.cancel_pending(ex.instance_data)
+                raise
+            except MinorInfraProcessorError as ex:
+                log.debug('IGNORING Minor IP error: %r', ex)
+            except CriticalInfraProcessorError as ex:
+                log.exception('Caught critical IP error:')
+                self.cancel_pending()
 
         log.debug('All sub-processes finished; exiting.')
-        datalog.debug('Sub-process results: %r', results)
-        return results
+        datalog.debug('Sub-process results: %r', self.results)
+        return self.results
 
-    def cancel_pending(self):
+    def cancel_pending(self, undo_instance_data=None):
         log.debug('Cancelling pending sub-processes')
-        try:
-            for p in self.processes.itervalues():
-                try:
-                    log.debug('Sending SIGINT to %r', p.name)
-                    os.kill(p.pid, signal.SIGINT)
-                except:
-                    log.exception('IGNORING exception while sending signal:')
-            for p in self.processes.itervalues():
-                log.debug('Waiting for %r to finish', p.name)
-                p.join()
-        finally:
-            self.processes = None
+
+        for p in self.processes.itervalues():
+            try:
+                log.debug('Sending SIGINT to %r', p.name)
+                os.kill(p.pid, signal.SIGINT)
+            except:
+                log.exception('IGNORING exception while sending signal:')
+
+        if undo_instance_data:
+            log.debug('Undoing create node for %r', instance_data['node_id'])
+            undo_command = self.infraprocessor.cri_drop_node(instance_data)
+            self._add_process(undo_command)
+
+        for p in self.processes.itervalues():
+            log.debug('Waiting for %r to finish', p.name)
+            p.join()
+
+        self.processes = None
