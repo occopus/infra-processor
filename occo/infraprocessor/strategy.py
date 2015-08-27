@@ -155,7 +155,7 @@ class PerformProcess(multiprocessing.Process):
 
     def run(self):
         try:
-            return self.instruction.perform(self.infraprocessor)
+            self.return_result(self.instruction.perform(self.infraprocessor))
         except BaseException:
             log.exception("Unhandled exception in process:")
 
@@ -196,7 +196,13 @@ class ParallelProcessesStrategy(Strategy):
         )
 
     def _process_one_result(self, result_queue, processes, results):
+        """
+        Wait and then process a sub-process result.
+        """
+        log.debug('Waiting for a sub-process to finish...')
         procid, result, error = result_queue.get()
+        log.debug('Result for process %r has arrived: %r',
+                  processes[procid].name, result or error)
         del processes[procid]
         if error:
             log.debug('Exception occured in sub-process:\n%s\n%r',
@@ -218,9 +224,9 @@ class ParallelProcessesStrategy(Strategy):
             log.debug('STARTED process for %r', p.instruction)
 
         # Wait for results
-        for p in processes.itervalues():
-            log.debug('Waiting for process %r', p.instruction)
-            p.join()
-            log.debug('FINISHED Process for %r', p.instruction)
-            #log.debug('RESULT received %r', p.result)
-            #results.append(p.result)
+        log.debug('Waiting for sub-processes to finish')
+        while processes:
+            self._process_one_result(result_queue, processes, results)
+
+        log.debug('All sub-processes finished; results: %r', results)
+        return results
