@@ -189,15 +189,13 @@ class ParallelProcessesStrategy(Strategy):
         Generate the list of :class:`multiprocessing.Process` objects to be
         started.
         """
-        return list(
-            PerformProcess(
-                index, self._mk_process_name(instruction),
-                infraprocessor, instruction, result_queue
-            )
+        return dict(
+            (index, PerformProcess(index, self._mk_process_name(instruction),
+                                   infraprocessor, instruction, result_queue))
             for index, instruction in enumerate(instruction_list)
         )
 
-    def _process_one_result(self, result_queue, processes, results):
+    def _process_one_result(self, result_queue, processes, results, done_list):
         procid, result, error = result_queue.get()
         if error:
             log.debug('Exception occured in sub-process:\n%s\n%r',
@@ -206,7 +204,6 @@ class ParallelProcessesStrategy(Strategy):
         else:
             results[procid] = result
 
-
     def _perform(self, infraprocessor, instruction_list):
         result_queue = multiprocessing.Queue()
         processes = self._generate_processes(
@@ -214,12 +211,13 @@ class ParallelProcessesStrategy(Strategy):
         results = [None] * len(instruction_list)
 
         # Start all processes
-        for p in processes:
+        for p in processes.itervalues():
             log.debug('Starting process for %r', p.instruction)
             p.start()
             log.debug('STARTED process for %r', p.instruction)
+
         # Wait for results
-        for p in processes:
+        for p in processes.itervalues():
             log.debug('Waiting for process %r', p.instruction)
             p.join()
             log.debug('FINISHED Process for %r', p.instruction)
