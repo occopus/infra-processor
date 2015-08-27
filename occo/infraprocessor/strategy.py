@@ -11,6 +11,8 @@
 __all__ = ['Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy']
 
 import logging
+import os, signal
+import sys, traceback
 import occo.util as util
 import occo.util.factory as factory
 import multiprocessing
@@ -157,15 +159,19 @@ class PerformProcess(multiprocessing.Process):
     def run(self):
         try:
             self.return_result(self.instruction.perform(self.infraprocessor))
-        except BaseException:
+        except KeyboardInterrupt:
+            log.debug('Operation cancelled.')
+            self.return_result(None)
+        except Exception:
             log.exception("Unhandled exception in process:")
+            exc = sys.exc_info()
+            self.return_exception(exc)
 
 @factory.register(Strategy, 'parallel')
 class ParallelProcessesStrategy(Strategy):
     """
     Implements :class:`Strategy`, performing the commands in a parallel manner.
     """
-
     def _possible_process_names(self, instr):
         """
         Lists the possible ids that can be used in the name of a process.
@@ -214,21 +220,36 @@ class ParallelProcessesStrategy(Strategy):
 
     def _perform(self, infraprocessor, instruction_list):
         result_queue = multiprocessing.Queue()
-        processes = self._generate_processes(
+        self.processes = self._generate_processes(
             instruction_list, infraprocessor, result_queue)
         results = [None] * len(instruction_list)
 
         # Start all processes
-        for p in processes.itervalues():
+        for p in self.processes.itervalues():
             log.debug('Starting process for %r', p.instruction)
             p.start()
             log.debug('STARTED process for %r', p.instruction)
 
         # Wait for results
         log.debug('Waiting for sub-processes to finish')
-        while processes:
-            self._process_one_result(result_queue, processes, results)
+        while self.processes:
+            self._process_one_result(result_queue, self.processes, results)
 
         log.debug('All sub-processes finished; exiting.')
         datalog.debug('Sub-process results: %r', results)
         return results
+
+    def cancel_pending(self):
+        log.debug('Cancelling pending sub-processes')
+        try:
+            for p in self.processes.itervalues():
+                try:
+                    log.debug('Sending SIGINT to %r', p.name)
+                    os.kill(p.pid, signal.SIGINT)
+                except:
+                    log.exception('IGNORING exception while sending signal:')
+            for p in self.processes.itervalues():
+                log.debug('Waiting for %r to finish', p.name)
+                p.join()
+        finally:
+            self.processes = None
