@@ -17,6 +17,7 @@ import multiprocessing
 from occo.exceptions.orchestration import *
 
 log = logging.getLogger('occo.infraprocessor.strategy')
+datalog = logging.getLogger('occo.data.infraprocessor.strategy')
 
 ###################################################
 # Strategies to process parallelizable instructions
@@ -228,5 +229,6 @@ class ParallelProcessesStrategy(Strategy):
         while processes:
             self._process_one_result(result_queue, processes, results)
 
-        log.debug('All sub-processes finished; results: %r', results)
+        log.debug('All sub-processes finished; exiting.')
+        datalog.debug('Sub-process results: %r', results)
         return results

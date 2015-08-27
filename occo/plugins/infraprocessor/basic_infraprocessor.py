@@ -23,6 +23,7 @@ from occo.infraprocessor.strategy import Strategy
 from occo.exceptions.orchestration import *
 
 log = logging.getLogger('occo.infraprocessor.basic')
+datalog = logging.getLogger('occo.data.infraprocessor.basic')
 
 ###############
 ## IP Commands
@@ -86,8 +87,9 @@ class CreateNode(Command):
     def perform(self, infraprocessor):
         node_description = self.node_description
 
-        log.debug('Performing CreateNode on node {\n%s}',
-                  yaml.dump(node_description, default_flow_style=False))
+        log.debug('Creating node %r', node_description['name'])
+        datalog.debug('Performing CreateNode on node {\n%s}',
+                      yaml.dump(node_description, default_flow_style=False))
 
         instance_data = dict(
             node_id=str(uuid.uuid4()),
@@ -141,8 +143,8 @@ class CreateNode(Command):
             ib, node_id, node_description,
             getattr(infraprocessor, 'default_timeout', None)
         )
-        log.debug("Resolved node description:\n%s",
-                  yaml.dump(resolved_node_def, default_flow_style=False))
+        datalog.debug("Resolved node description:\n%s",
+                      yaml.dump(resolved_node_def, default_flow_style=False))
         instance_data['resolved_node_definition'] = resolved_node_def
         instance_data['backend_id'] = resolved_node_def['backend_id']
 

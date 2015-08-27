@@ -24,6 +24,7 @@ import jinja2
 from occo.infraprocessor.node_resolution import Resolver
 
 log = logging.getLogger('occo.infraprocessor.node_resolution.chef')
+datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.chef')
 
 @factory.register(Resolver, 'chef+cloudinit')
 class ChefCloudinitResolver(Resolver):
@@ -60,7 +61,7 @@ class ChefCloudinitResolver(Resolver):
             yield 'default', ''
 
         src, template = util.find_effective_setting(context_list())
-        log.debug('Context template from %s:\n%s', src, template)
+        datalog.debug('Context template from %s:\n%s', src, template)
 
         return jinja2.Template(template)
 
