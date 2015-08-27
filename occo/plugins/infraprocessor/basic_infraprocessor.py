@@ -68,7 +68,7 @@ class CreateInfrastructure(Command):
     def _undo_create_infra(self, infraprocessor):
         log.info('UNDOING infrastructure creation: %r', self.infra_id)
         cmd = infraprocessor.cri_drop_infrastructure(self.infra_id)
-        infraprocessor.push_instructions(cmd)
+        cmd.perform(infraprocessor)
 
 class CreateNode(Command):
     """
@@ -188,7 +188,7 @@ class CreateNode(Command):
     def _undo_create_node(self, infraprocessor, instance_data):
         log.info('UNDOING node creation: %r', instance_data['node_id'])
         cmd = infraprocessor.cri_drop_node(instance_data)
-        infraprocessor.push_instructions(cmd)
+        cmd.perform(infraprocessor)
 
 class DropNode(Command):
     """
