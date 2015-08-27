@@ -282,8 +282,10 @@ class ParallelProcessesStrategy(Strategy):
             undo_command = self.infraprocessor.cri_drop_node(instance_data)
             self._add_process(undo_command).start()
 
-        for p in self.processes.itervalues():
-            log.debug('Waiting for %r to finish', p.name)
-            p.join()
-
-        self.processes = None
+        log.debug('Waiting for processes to finish')
+        while self.processes:
+            try:
+                self._process_one_result()
+            except BaseException:
+                log.exception(
+                    'IGNORING exception while waiting for sub-processes:')
