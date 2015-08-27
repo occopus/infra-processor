@@ -197,6 +197,7 @@ class ParallelProcessesStrategy(Strategy):
 
     def _process_one_result(self, result_queue, processes, results, done_list):
         procid, result, error = result_queue.get()
+        del processes[procid]
         if error:
             log.debug('Exception occured in sub-process:\n%s\n%r',
                       error['tbstr'], error['value'])
