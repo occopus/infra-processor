@@ -131,10 +131,27 @@ class PerformProcess(multiprocessing.Process):
     Process object used by :class:`ParallelProcessesStrategy` to perform a
     single command.
     """
-    def __init__(self, procname, infraprocessor, instruction):
+    def __init__(self, procid, procname, infraprocessor, instruction,
+                 result_queue):
         super(PerformProcess, self).__init__(name=procname,target=self.run)
         self.infraprocessor = infraprocessor
         self.instruction = instruction
+        self.result_queue = result_queue
+        self.procid = procid
+        self.log = logging.getLogger('occo.infraprocessor.strategy.subprocess')
+
+    def return_result(self, result):
+        self.result_queue.put((self.procid, result, None))
+
+    def return_exception(self, exc_info):
+        error = {
+            'type'  : exc_info[0],
+            'value' : exc_info[1],
+            # Raw traceback cannot be passed through Queue
+            'tbstr' : ''.join(traceback.format_tb(exc_info[2])),
+        }
+        self.log.debug('Returning exception: %r', error)
+        self.result_queue.put((self.procid, None, error))
 
     def run(self):
         try:
@@ -146,32 +163,61 @@ class PerformProcess(multiprocessing.Process):
 class ParallelProcessesStrategy(Strategy):
     """
     Implements :class:`Strategy`, performing the commands in a parallel manner.
-
-    .. todo:: Must implement :meth:`cancel_pending` also.
     """
 
+    def _possible_process_names(self, instr):
+        """
+        Lists the possible ids that can be used in the name of a process.
+        """
+        yield getattr(instr, 'infra_id', None)
+        yield getattr(instr, 'instance_data', dict()).get('node_id')
+        yield getattr(instr, 'node_description', dict()).get('name')
+        yield 'noID'
+
+    def _mk_process_name(self, instr):
+        """
+        Generate a process name.
+        """
+        return 'Proc{0}-{1}'.format(
+            instr.__class__.__name__,
+            util.icoalesce(self._possible_process_names(instr))
+        )
+
+    def _generate_processes(self, instruction_list, infraprocessor,
+                           result_queue):
+        """
+        Generate the list of :class:`multiprocessing.Process` objects to be
+        started.
+        """
+        return list(
+            PerformProcess(
+                index, self._mk_process_name(instruction),
+                infraprocessor, instruction, result_queue
+            )
+            for index, instruction in enumerate(instruction_list)
+        )
+
+    def _process_one_result(self, result_queue, processes, results):
+        procid, result, error = result_queue.get()
+        if error:
+            log.debug('Exception occured in sub-process:\n%s\n%r',
+                      error['tbstr'], error['value'])
+            raise error['type'], error['value']
+        else:
+            results[procid] = result
+
+
     def _perform(self, infraprocessor, instruction_list):
-        processes=list()
-        for ind, i in enumerate(instruction_list):
+        result_queue = multiprocessing.Queue()
+        processes = self._generate_processes(
+            instruction_list, infraprocessor, result_queue)
+        results = [None] * len(instruction_list)
 
-            def f():
-                yield getattr(i, 'infra_id', None)
-                yield getattr(i, 'instance_data', dict()).get('node_id')
-                yield getattr(i, 'node_description', dict()).get('name')
-                yield 'noID'
-
-            strid = util.icoalesce(f())
-            processes.append(
-                    PerformProcess(
-                        'Proc{0}-{1}'.format(i.__class__.__name__,strid),
-                        infraprocessor, 
-                        i))
         # Start all processes
         for p in processes:
             log.debug('Starting process for %r', p.instruction)
             p.start()
             log.debug('STARTED process for %r', p.instruction)
-        results = list()
         # Wait for results
         for p in processes:
             log.debug('Waiting for process %r', p.instruction)
