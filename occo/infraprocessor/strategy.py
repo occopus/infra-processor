@@ -198,10 +198,12 @@ class ParallelProcessesStrategy(Strategy):
         """
         index = len(self.results)
         self.results.append(None)
-        self.processes[index] = \
+        process = \
             PerformProcess(
                 index, self._mk_process_name(instruction),
                 self.infraprocessor, instruction, self.result_queue)
+        self.processes[index] = process
+        return process
 
     def _generate_processes(self, instruction_list):
         """
@@ -278,7 +280,7 @@ class ParallelProcessesStrategy(Strategy):
         if undo_instance_data:
             log.debug('Undoing create node for %r', instance_data['node_id'])
             undo_command = self.infraprocessor.cri_drop_node(instance_data)
-            self._add_process(undo_command)
+            self._add_process(undo_command).start()
 
         for p in self.processes.itervalues():
             log.debug('Waiting for %r to finish', p.name)
