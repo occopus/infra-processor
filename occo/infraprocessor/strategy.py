@@ -195,7 +195,7 @@ class ParallelProcessesStrategy(Strategy):
             for index, instruction in enumerate(instruction_list)
         )
 
-    def _process_one_result(self, result_queue, processes, results, done_list):
+    def _process_one_result(self, result_queue, processes, results):
         procid, result, error = result_queue.get()
         del processes[procid]
         if error:
