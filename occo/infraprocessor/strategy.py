@@ -21,6 +21,7 @@ from occo.exceptions.orchestration import *
 
 log = logging.getLogger('occo.infraprocessor.strategy')
 datalog = logging.getLogger('occo.data.infraprocessor.strategy')
+clean = util.Cleaner(['resolved_node_definition', 'node_description']).deep_copy
 
 ###################################################
 # Strategies to process parallelizable instructions
@@ -143,8 +144,11 @@ class PerformProcess(multiprocessing.Process):
         self.result_queue = result_queue
         self.procid = procid
         self.log = logging.getLogger('occo.infraprocessor.strategy.subprocess')
+        self.datalog = logging.getLogger('occo.data.infraprocessor.strategy.subprocess')
 
     def return_result(self, result):
+        self.log.debug('Sub-process finished normally; exiting.')
+        self.datalog.debug('Returning result: %r', clean(result))
         self.result_queue.put((self.procid, result, None))
 
     def return_exception(self, exc_info):
@@ -162,10 +166,9 @@ class PerformProcess(multiprocessing.Process):
         try:
             self.return_result(self.instruction.perform(self.infraprocessor))
         except KeyboardInterrupt:
-            log.debug('Operation cancelled.')
+            self.log.debug('Operation cancelled.')
             self.return_result(None)
         except Exception:
-            log.exception("Unhandled exception in process:")
             exc = sys.exc_info()
             self.return_exception(exc)
 
@@ -224,15 +227,15 @@ class ParallelProcessesStrategy(Strategy):
         """
         log.debug('Waiting for a sub-process to finish...')
         procid, result, error = self.result_queue.get()
-        log.debug('Result for process %r has arrived: %r',
-                  self.processes[procid].name, result or error)
+        log.debug('Result for process %r has arrived',
+                  self.processes[procid].name)
 
         del self.processes[procid]
 
         if error:
             error['value'] = yaml.load(error['value'])
             log.debug('Exception occured in sub-process:\n%s\n%r',
-                      error['tbstr'], error['value'])
+                      error['tbstr'], clean(error['value']))
             raise error['type'], error['value']
         else:
             self.results[procid] = result
