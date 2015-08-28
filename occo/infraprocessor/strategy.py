@@ -286,6 +286,10 @@ class ParallelProcessesStrategy(Strategy):
         while self.processes:
             try:
                 self._process_one_result()
+            except KeyboardInterrupt:
+                log.info('Received Ctrl+C while waiting for sub-processes '
+                         'to exit.Aborting.')
+                raise
             except BaseException:
                 log.exception(
                     'IGNORING exception while waiting for sub-processes:')
