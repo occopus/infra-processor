@@ -32,11 +32,22 @@ class Strategy(factory.MultiBackend):
     Abstract strategy for processing a batch of *independent* commands.
     """
 
-    def cancel_pending(self):
+    def cancel_pending(self, reason=None):
         """
         Registers that performing the batch should be aborted. It only works
         iff the implementation of the strategy supports it (e.g. a thread pool
         or a sequential iteration can be aborted).
+
+        :param Exception reason: Optional. If specified, and it's type is
+            :exc:`~occo.exceptions.orchestration.NodeCreationError`, the
+            ``instance_data`` in this exception will be used to drop the
+            partially created node along with pending ones. This is needed for
+            optimization: parallelized strategies can include the implied
+            DropNode command in their process pool as they see fit (not
+            strictly before/after).
+
+            (Or, in the future, implementations may make more sophisticated
+            decisions based on ``reason``.)
         """
         raise NotImplementedError()
 
@@ -63,27 +74,17 @@ class Strategy(factory.MultiBackend):
             # the faulty node is started to be undone. I.e.: the order of the
             # following two lines matters:
             self._handle_infraprocessorerror(infraprocessor, ex)
-            self._undo_create_node(infraprocessor, ex.instance_data)
             raise
         except CriticalInfraProcessorError as ex:
             self._handle_infraprocessorerror(infraprocessor, ex)
             raise
-
-    def _undo_create_node(self, infraprocessor, instance_data):
-        undo_command = infraprocessor.cri_drop_node(instance_data)
-        try:
-            undo_command.perform(infraprocessor)
-        except Exception:
-            # TODO: maybe store instance_data in UDS in case it's stuck?
-            log.exception(
-                'IGNORING error while dropping partially started node')
 
     def _handle_infraprocessorerror(self, infraprocessor, ex):
         log.error('Strategy.perform: exception: %s', ex)
         log.error('A critical error (%s) has occured, aborting remaining '
                   'commands in this batch (infra_id: %r).',
                   ex.__class__.__name__, ex.infra_id)
-        self.cancel_pending()
+        self.cancel_pending(ex)
 
     def _perform(self, infraprocessor, instruction_list):
         """
@@ -109,7 +110,18 @@ class SequentialStrategy(Strategy):
     def __init__(self):
         self.cancelled = False
 
-    def cancel_pending(self):
+    def cancel_pending(self, reason=None):
+        if isinstance(reason, NodeCreationError):
+            inst_data = reason.instance_data
+            log.debug('Undoing create node for %r', inst_data['node_id'])
+            undo_command = infraprocessor.cri_drop_node(inst_data)
+            try:
+                undo_command.perform(infraprocessor)
+            except Exception:
+                # TODO: maybe store instance_data in UDS in case it's stuck?
+                log.exception(
+                    'IGNORING error while dropping partially started node')
+
         self.cancelled = True
 
     def _perform(self, infraprocessor, instruction_list):
@@ -256,24 +268,14 @@ class ParallelProcessesStrategy(Strategy):
         while self.processes:
             try:
                 self._process_one_result()
-            except NodeCreationError as ex:
-                # Undoing CreateNode is done here, not inside the CreateNode
-                # command, so cancellation can be dispatched (_handle_...)
-                # *before* the faulty node is started to be undone. I.e.: the
-                # order of the following two lines matters:
-                self.cancel_pending(ex.instance_data)
-                raise
             except MinorInfraProcessorError as ex:
                 log.debug('IGNORING Minor IP error: %r', ex)
-            except CriticalInfraProcessorError as ex:
-                log.exception('Caught critical IP error:')
-                self.cancel_pending()
 
         log.debug('All sub-processes finished; exiting.')
         datalog.debug('Sub-process results: %r', self.results)
         return self.results
 
-    def cancel_pending(self, undo_instance_data=None):
+    def cancel_pending(self, reason=None):
         log.debug('Cancelling pending sub-processes')
 
         for p in self.processes.itervalues():
@@ -283,10 +285,10 @@ class ParallelProcessesStrategy(Strategy):
             except:
                 log.exception('IGNORING exception while sending signal:')
 
-        if undo_instance_data:
-            log.debug('Undoing create node for %r',
-                      undo_instance_data['node_id'])
-            undo_command = self.infraprocessor.cri_drop_node(undo_instance_data)
+        if isinstance(reason, NodeCreationError):
+            inst_data = reason.instance_data
+            log.debug('Undoing create node for %r', inst_data['node_id'])
+            undo_command = self.infraprocessor.cri_drop_node(inst_data)
             self._add_process(undo_command).start()
 
         log.debug('Waiting for processes to finish')
