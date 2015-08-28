@@ -228,6 +228,8 @@ class DropNode(Command):
             log.debug('Dropping node %r', self.instance_data['node_id'])
             infraprocessor.cloudhandler.drop_node(self.instance_data)
             infraprocessor.servicecomposer.drop_node(self.instance_data)
+            infraprocessor.uds.remove_nodes(self.instance_data['infra_id'],
+                                            self.instance_data['node_id'])
             ib.main_eventlog.node_deleted(self.instance_data)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
