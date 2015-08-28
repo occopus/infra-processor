@@ -243,8 +243,8 @@ class DropNode(Command):
             raise \
                 MinorInfraProcessorError(
                     self.instance_data['infra_id'],
-                    ex,
-                    instance_data=self.instance_data), \
+                    ex
+                ), \
                 None, sys.exc_info()[2]
 
 class DropInfrastructure(Command):
