@@ -23,6 +23,7 @@ from occo.infraprocessor.strategy import Strategy
 from occo.exceptions.orchestration import *
 
 log = logging.getLogger('occo.infraprocessor.basic')
+datalog = logging.getLogger('occo.data.infraprocessor.basic')
 
 ###############
 ## IP Commands
@@ -50,6 +51,7 @@ class CreateInfrastructure(Command):
             ib.main_eventlog.infrastructure_created(self.infra_id)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
+            log.info('Cancelling infrastructure creation (received SIGINT)')
             self._undo_create_infra(infraprocessor)
             raise
         except InfraProcessorError:
@@ -63,11 +65,19 @@ class CreateInfrastructure(Command):
         else:
             return result
 
-
     def _undo_create_infra(self, infraprocessor):
-        log.info('UNDOING infrastructure creation: %r', self.infra_id)
-        cmd = infraprocessor.cri_drop_infrastructure(self.infra_id)
-        infraprocessor.push_instructions(cmd)
+        try:
+            log.info('UNDOING infrastructure creation: %r', self.infra_id)
+            cmd = infraprocessor.cri_drop_infrastructure(self.infra_id)
+            cmd.perform(infraprocessor)
+        except Exception:
+            # This exception is ignored for the following reason:
+            # The actual command that is running now is a CreateXXX command;
+            # undoing is triggered only upon an exception while performing that
+            # command. Towards the caller, the original exception must be
+            # propagated, not this auxiliary error.
+            log.exception(
+                'IGNORING exception while undoing {0}:'.format(self.__class__))
 
 class CreateNode(Command):
     """
@@ -86,8 +96,9 @@ class CreateNode(Command):
     def perform(self, infraprocessor):
         node_description = self.node_description
 
-        log.debug('Performing CreateNode on node {\n%s}',
-                  yaml.dump(node_description, default_flow_style=False))
+        log.debug('Creating node %r', node_description['name'])
+        datalog.debug('Performing CreateNode on node {\n%s}',
+                      yaml.dump(node_description, default_flow_style=False))
 
         instance_data = dict(
             node_id=str(uuid.uuid4()),
@@ -103,6 +114,7 @@ class CreateNode(Command):
             ib.main_eventlog.node_created(instance_data)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
+            log.info('Cancelling node creation (received SIGINT)')
             self._undo_create_node(infraprocessor, instance_data)
             raise
         except NodeCreationError as ex:
@@ -141,8 +153,8 @@ class CreateNode(Command):
             ib, node_id, node_description,
             getattr(infraprocessor, 'default_timeout', None)
         )
-        log.debug("Resolved node description:\n%s",
-                  yaml.dump(resolved_node_def, default_flow_style=False))
+        datalog.debug("Resolved node description:\n%s",
+                      yaml.dump(resolved_node_def, default_flow_style=False))
         instance_data['resolved_node_definition'] = resolved_node_def
         instance_data['backend_id'] = resolved_node_def['backend_id']
 
@@ -184,9 +196,18 @@ class CreateNode(Command):
         return instance_data
 
     def _undo_create_node(self, infraprocessor, instance_data):
-        log.info('UNDOING node creation: %r', instance_data['node_id'])
-        cmd = infraprocessor.cri_drop_node(instance_data)
-        infraprocessor.push_instructions(cmd)
+        try:
+            log.info('UNDOING node creation: %r', instance_data['node_id'])
+            cmd = infraprocessor.cri_drop_node(instance_data)
+            cmd.perform(infraprocessor)
+        except Exception:
+            # This exception is ignored for the following reason:
+            # The actual command that is running now is a CreateXXX command;
+            # undoing is triggered only upon an exception while performing that
+            # command. Towards the caller, the original exception must be
+            # propagated, not this auxiliary error.
+            log.exception(
+                'IGNORING exception while undoing {0}:'.format(self.__class__))
 
 class DropNode(Command):
     """
@@ -207,6 +228,8 @@ class DropNode(Command):
             log.debug('Dropping node %r', self.instance_data['node_id'])
             infraprocessor.cloudhandler.drop_node(self.instance_data)
             infraprocessor.servicecomposer.drop_node(self.instance_data)
+            infraprocessor.uds.remove_nodes(self.instance_data['infra_id'],
+                                            self.instance_data['node_id'])
             ib.main_eventlog.node_deleted(self.instance_data)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
@@ -220,8 +243,8 @@ class DropNode(Command):
             raise \
                 MinorInfraProcessorError(
                     self.instance_data['infra_id'],
-                    ex,
-                    instance_data=self.instance_data), \
+                    ex
+                ), \
                 None, sys.exc_info()[2]
 
 class DropInfrastructure(Command):
