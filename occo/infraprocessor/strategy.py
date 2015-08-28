@@ -10,6 +10,7 @@
 
 __all__ = ['Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy']
 
+import yaml
 import logging
 import os, signal
 import sys, traceback
@@ -147,13 +148,14 @@ class PerformProcess(multiprocessing.Process):
         self.result_queue.put((self.procid, result, None))
 
     def return_exception(self, exc_info):
+        exc = exc_info[1]
         error = {
             'type'  : exc_info[0],
-            'value' : exc_info[1],
+            'value' : yaml.dump(exc),
             # Raw traceback cannot be passed through Queue
             'tbstr' : ''.join(traceback.format_tb(exc_info[2])),
         }
-        self.log.debug('Returning exception: %r', error)
+        self.log.debug('Sub-process execution failed: %r', exc)
         self.result_queue.put((self.procid, None, error))
 
     def run(self):
@@ -228,6 +230,7 @@ class ParallelProcessesStrategy(Strategy):
         del self.processes[procid]
 
         if error:
+            error['value'] = yaml.load(error['value'])
             log.debug('Exception occured in sub-process:\n%s\n%r',
                       error['tbstr'], error['value'])
             raise error['type'], error['value']
