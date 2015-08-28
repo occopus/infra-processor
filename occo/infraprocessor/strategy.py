@@ -278,8 +278,9 @@ class ParallelProcessesStrategy(Strategy):
                 log.exception('IGNORING exception while sending signal:')
 
         if undo_instance_data:
-            log.debug('Undoing create node for %r', instance_data['node_id'])
-            undo_command = self.infraprocessor.cri_drop_node(instance_data)
+            log.debug('Undoing create node for %r',
+                      undo_instance_data['node_id'])
+            undo_command = self.infraprocessor.cri_drop_node(undo_instance_data)
             self._add_process(undo_command).start()
 
         log.debug('Waiting for processes to finish')
