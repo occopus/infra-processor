@@ -258,10 +258,10 @@ class ParallelProcessesStrategy(Strategy):
         self._generate_processes(instruction_list)
 
         # Start all processes
+        log.debug('Starting sub-process')
         for p in self.processes.itervalues():
-            log.debug('Starting process for %r', p.instruction)
+            log.debug('Starting sub-process for %r', p.instruction)
             p.start()
-            log.debug('STARTED process for %r', p.instruction)
 
         # Wait for results
         log.debug('Waiting for sub-processes to finish')
@@ -291,7 +291,7 @@ class ParallelProcessesStrategy(Strategy):
             undo_command = self.infraprocessor.cri_drop_node(inst_data)
             self._add_process(undo_command).start()
 
-        log.debug('Waiting for processes to finish')
+        log.debug('Waiting for sub-processes to finish')
         while self.processes:
             try:
                 self._process_one_result()
