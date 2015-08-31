@@ -115,7 +115,9 @@ class CreateNode(Command):
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
             log.info('Cancelling node creation (received SIGINT)')
-            self._undo_create_node(infraprocessor, instance_data)
+            # Undo only iff the instance has already been created
+            if 'instance_id' in instance_data:
+                self._undo_create_node(infraprocessor, instance_data)
             raise
         except NodeCreationError as ex:
             # Amend a node creation error iff it couldn't have been initialized
