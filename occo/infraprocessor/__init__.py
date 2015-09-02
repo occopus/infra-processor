@@ -14,23 +14,16 @@
 import logging
 import occo.util.factory as factory
 from occo.infraprocessor.strategy import Strategy
-import time
 
 log = logging.getLogger('occo.infraprocessor')
 
 class Command(object):
     """
-    Abstract definition of a command.
+    Abstract definition of an InfraProcessor command using the Command design
+    pattern.
 
-    If they override it, sub-classes must the call ``Command``'s constructor
-    to ensure ``timestamp`` is set. This is important because the timestamp is
-    used to clear the infrastructure processor queue.
-    See: :meth:`InfraProcessor.cancel_pending`.
-
-    :var timestamp: The time of creating the command.
+    Arguments should be passed through the constructor object, which should then store the
     """
-    def __init__(self):
-        self.timestamp = time.time()
     def perform(self, infraprocessor):
         """Perform the algorithm represented by this command."""
         raise NotImplementedError()
@@ -56,7 +49,6 @@ class InfraProcessor(factory.MultiBackend):
     def __init__(self, process_strategy):
         self.strategy = Strategy.from_config(process_strategy)
         log.debug('Initialized InfraProcessor with strategy %s', self.strategy)
-        self.cancelled_until = 0
 
     def __enter__(self):
         """
@@ -73,16 +65,6 @@ class InfraProcessor(factory.MultiBackend):
         return self
     def __exit__(self, type, value, tb):
         pass
-
-    def _not_cancelled(self, instruction):
-        """
-        Decides whether a command has to be considered cancelled; i.e. it
-        has arrived after the deadline registered by :meth:`cancel_pending`.
-
-        Negating the function's meaning and its name has spared a lambda
-        declaration in :meth:`push_instructions` improving readability.
-        """
-        return instruction.timestamp > self.cancelled_until
 
     def push_instructions(self, instructions):
         """
@@ -101,10 +83,8 @@ class InfraProcessor(factory.MultiBackend):
         instruction_list = \
             instructions if hasattr(instructions, '__iter__') \
             else (instructions,)
-        # Don't bother with commands known to be already cancelled.
-        filtered_list = list(filter(self._not_cancelled, instruction_list))
-        log.debug('Filtered list: %r', filtered_list)
-        return self.strategy.perform(self, filtered_list)
+        log.debug('Pushing instruction list: %r', instruction_list)
+        return self.strategy.perform(self, instruction_list)
 
     def cri_create_infrastructure(self, infra_id):
         """ Create a primitive that will create an infrastructure instance. """
@@ -119,20 +99,9 @@ class InfraProcessor(factory.MultiBackend):
         """ Create a primitive that will delete an infrastructure instance. """
         raise NotImplementedError()
 
-    def cancel_pending(self, deadline=None):
+    def cancel_pending(self):
         """
-        Registers that commands up to a specific time should be considered
-        cancelled.
-
-        :param deadline: The strategy will try to cancel/abort/ignore
-            performing the commands that has been created before this time.
-        :type deadline: :class:`int`, unix timestamp
+        Cancels pending opartions.
         """
         log.info('Cancelling pending instructions')
-        if deadline is None:
-            # TODO This default may be a problem. If a command has a timestamp
-            # between NOW and NOW+1, it must be performed. But the +1 here
-            # may break this (race condition). Must think this through.
-            deadline = int(time.time()) + 1 # ~ceil()
-        self.cancelled_until = deadline
         self.strategy.cancel_pending()
