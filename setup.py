@@ -14,16 +14,16 @@ setuptools.setup(
         'occo.plugins.infraprocessor',
         'occo.plugins.infraprocessor.node_resolution',
     ],
+    packages=[
+        'occo.infraprocessor',
+        'occo.infraprocessor.synchronization',
+    ],
     py_modules=[
         'occo.infraprocessor.node_resolution',
         'occo.infraprocessor.strategy',
         'occo.infraprocessor.synchronization.primitives',
         'occo.plugins.infraprocessor.basic_infraprocessor',
         'occo.plugins.infraprocessor.node_resolution.chef_cloudinit',
-    ],
-    packages=[
-        'occo.infraprocessor',
-        'occo.infraprocessor.synchronization',
     ],
     scripts=[],
     url='http://www.lpds.sztaki.hu/',
