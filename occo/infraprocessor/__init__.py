@@ -50,22 +50,6 @@ class InfraProcessor(factory.MultiBackend):
         self.strategy = Strategy.from_config(process_strategy)
         log.debug('Initialized InfraProcessor with strategy %s', self.strategy)
 
-    def __enter__(self):
-        """
-        This can be overridden in a sub-class if necessary.
-
-        .. todo:: This is quite ugly. An Infra Processor doesn't need context
-            management per se. This is here because of the remote skeleton, and
-            the queues it uses. These queues need this. However, this shouldn't
-            affect the infrastructure processor; instead, the queues should be
-            initialized in the start_consuming or similar method, as late as
-            possible, and invisible to the client. It would be very nice to
-            factor this out.
-        """
-        return self
-    def __exit__(self, type, value, tb):
-        pass
-
     def push_instructions(self, instructions):
         """
         Performs the given list of independent instructions according to the
