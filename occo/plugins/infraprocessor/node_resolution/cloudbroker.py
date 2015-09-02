@@ -10,7 +10,7 @@
 
 from __future__ import absolute_import
 
-__all__ = ['CloudBrrokerResolver']
+__all__ = ['CloudBrokerResolver']
 
 import logging
 import occo.util as util
