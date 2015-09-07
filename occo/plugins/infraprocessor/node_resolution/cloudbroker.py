@@ -24,7 +24,7 @@ from occo.infraprocessor.node_resolution import Resolver
 log = logging.getLogger('occo.infraprocessor.node_resolution.cloudbroker')
 
 @factory.register(Resolver, 'cloudbroker')
-class ChefCloudinitResolver(Resolver):
+class CloudBrokerResolver(Resolver):
     """
     Implementation of :class:`Resolver` for implementations for `cloudbroker`_..
 
