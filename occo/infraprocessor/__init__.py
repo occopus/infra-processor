@@ -43,8 +43,6 @@ class InfraProcessor(factory.MultiBackend):
     :type process_strategy: :class:`Strategy`
 
     .. _`Command design pattern`: http://en.wikipedia.org/wiki/Command_pattern
-
-    .. automethod:: __enter__
     """
     def __init__(self, process_strategy):
         self.strategy = Strategy.from_config(process_strategy)
