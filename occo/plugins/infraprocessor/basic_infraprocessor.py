@@ -305,8 +305,7 @@ class BasicInfraProcessor(InfraProcessor):
         :meth:`CreateNode.perform`. ``poll_delay`` is the number of seconds to
         wait between polls.
     """
-    def __init__(self, user_data_store,
-                 cloudhandler, servicecomposer,
+    def __init__(self,
                  process_strategy='sequential',
                  poll_delay=10,
                  **config):
@@ -314,9 +313,9 @@ class BasicInfraProcessor(InfraProcessor):
             process_strategy=process_strategy)
         self.__dict__.update(config)
         self.ib = ib.main_info_broker
-        self.uds = user_data_store
-        self.cloudhandler = cloudhandler
-        self.servicecomposer = servicecomposer
+        self.uds = ib.main_uds
+        self.cloudhandler = ib.main_cloudhandler
+        self.servicecomposer = ib.main_servicecomposer
         self.poll_delay = poll_delay
 
     def cri_create_infrastructure(self, infra_id):
