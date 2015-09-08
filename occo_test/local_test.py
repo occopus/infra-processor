@@ -14,13 +14,18 @@ import threading
 import occo.util.factory as factory
 from occo.infobroker.uds import UDS
 import occo.infobroker as ib
+import occo.infobroker.eventlog as el
 
 class LocalTest(unittest.TestCase):
     def setUp(self):
-        self.ib = DummyInfoBroker(main_info_broker=True)
-        ib.real_main_uds = UDS.instantiate(protocol='dict')
-        ib.real_main_servicecomposer = DummyServiceComposer(self.ib)
-        ib.real_main_cloudhandler = DummyCloudHandler(self.ib)
+        ib.set_all_singletons(
+            DummyInfoBroker(),
+            UDS.instantiate(protocol='dict'),
+            el.EventLog.instantiate(protocol='logging'),
+            DummyCloudHandler(),
+            DummyServiceComposer(),
+        )
+        self.ib = ib.real_main_info_broker
     def test_create_infrastructure(self):
         infrap = ip.InfraProcessor.instantiate('basic')
         eid = uid()

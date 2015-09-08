@@ -9,6 +9,7 @@ from common import *
 import occo.plugins.infraprocessor.basic_infraprocessor as bip
 import occo.infraprocessor as ip
 import occo.util as util
+import occo.infobroker as ib
 from occo.infobroker.uds import UDS
 from occo.infobroker.kvstore import KeyValueStore
 import threading
@@ -17,10 +18,13 @@ class Stuff(): pass
 
 class BaseTest(unittest.TestCase):
     def setUp(self):
-        self.ib = DummyInfoBroker(main_info_broker=True)
-        self.uds = UDS.instantiate(protocol='dict')
-        self.sc = DummyServiceComposer(self.ib)
-        self.ch = DummyCloudHandler(self.ib)
+        ib.set_all_singletons(
+            DummyInfoBroker(),
+            UDS.instantiate(protocol='dict'),
+            None,
+            DummyCloudHandler(),
+            DummyServiceComposer(),
+        )
     def test_cmd_1(self):
         self.infrap = ip.InfraProcessor.instantiate('basic')
         self.assertEqual(self.infrap.cri_create_infrastructure(Stuff()).__class__,
