@@ -307,11 +307,9 @@ class BasicInfraProcessor(InfraProcessor):
     """
     def __init__(self,
                  process_strategy='sequential',
-                 poll_delay=10,
-                 **config):
+                 poll_delay=10):
         super(BasicInfraProcessor, self).__init__(
             process_strategy=process_strategy)
-        self.__dict__.update(config)
         self.ib = ib.main_info_broker
         self.uds = ib.main_uds
         self.cloudhandler = ib.main_cloudhandler
