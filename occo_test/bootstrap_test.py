@@ -6,6 +6,7 @@
 
 import unittest
 from common import *
+import occo.infobroker as ib
 import occo.infraprocessor as ip
 import threading
 import uuid
@@ -14,38 +15,36 @@ def uid():
     return str(uuid.uuid4())
 
 class BaseTest(unittest.TestCase):
+    def setUp(self):
+        self.ib = ib.real_main_info_broker = DummyInfoBroker()
     def test_sc_create_infrastructure(self):
-        ib = DummyInfoBroker()
-        sc = DummyServiceComposer(ib)
+        sc = DummyServiceComposer()
         nid = uid()
         sc.create_infrastructure(nid)
-        self.assertEqual(repr(ib), '{0}:[]'.format(nid))
+        self.assertEqual(repr(self.ib), '{0}:[]'.format(nid))
     def test_sc_register_node(self):
-        ib = DummyInfoBroker()
-        sc = DummyServiceComposer(ib)
+        sc = DummyServiceComposer()
         eid = uid()
         sc.create_infrastructure(eid)
         node = DummyNode(eid, uid())
         sc.register_node(node)
         self.assertEqual(
-            repr(ib),
+            repr(self.ib),
             '{0}:[{1}_False]'.format(eid, node['node_id']))
     def test_ch_create_node(self):
-        ib = DummyInfoBroker()
-        sc = DummyServiceComposer(ib)
-        ch = DummyCloudHandler(ib)
+        sc = DummyServiceComposer()
+        ch = DummyCloudHandler()
         eid = uid()
         sc.create_infrastructure(eid)
         node = DummyNode(eid, uid())
         sc.register_node(node)
         ch.create_node(node)
         self.assertEqual(
-            repr(ib),
+            repr(self.ib),
             '{0}:[{1}_True]'.format(eid, node['node_id']))
     def test_ch_drop_node(self):
-        ib = DummyInfoBroker()
-        sc = DummyServiceComposer(ib)
-        ch = DummyCloudHandler(ib)
+        sc = DummyServiceComposer()
+        ch = DummyCloudHandler()
         eid = uid()
         sc.create_infrastructure(eid)
         node = DummyNode(eid, uid())
@@ -53,12 +52,11 @@ class BaseTest(unittest.TestCase):
         ch.create_node(node)
         ch.drop_node(node)
         self.assertEqual(
-            repr(ib),
+            repr(self.ib),
             '{0}:[{1}_False]'.format(eid, node['node_id']))
     def test_sc_drop_node(self):
-        ib = DummyInfoBroker()
-        sc = DummyServiceComposer(ib)
-        ch = DummyCloudHandler(ib)
+        sc = DummyServiceComposer()
+        ch = DummyCloudHandler()
         eid = uid()
         sc.create_infrastructure(eid)
         node = DummyNode(eid, uid())
@@ -66,11 +64,10 @@ class BaseTest(unittest.TestCase):
         ch.create_node(node)
         ch.drop_node(node)
         sc.drop_node(node)
-        self.assertEqual(repr(ib), '{0}:[]'.format(eid))
+        self.assertEqual(repr(self.ib), '{0}:[]'.format(eid))
     def test_sc_drop_infrastructure(self):
-        ib = DummyInfoBroker()
-        sc = DummyServiceComposer(ib)
-        ch = DummyCloudHandler(ib)
+        sc = DummyServiceComposer()
+        ch = DummyCloudHandler()
         eid = uid()
         sc.create_infrastructure(eid)
         node = DummyNode(eid, uid())
@@ -79,4 +76,4 @@ class BaseTest(unittest.TestCase):
         ch.drop_node(node)
         sc.drop_node(node)
         sc.drop_infrastructure(eid)
-        self.assertEqual(repr(ib), '')
+        self.assertEqual(repr(self.ib), '')

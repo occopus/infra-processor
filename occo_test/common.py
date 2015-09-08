@@ -73,8 +73,8 @@ class DefaultIB(ib.InfoProvider):
 
 @ib.provider
 class DummyInfoBroker(ib.InfoRouter):
-    def __init__(self, main_info_broker=True):
-        ib.InfoRouter.__init__(self, main_info_broker=main_info_broker)
+    def __init__(self):
+        ib.InfoRouter.__init__(self)
         self.environments = dict()
         self.node_lookup = dict(preexisting_node=['preexisting node'])
         synch = sp.SynchronizationProvider()
@@ -104,8 +104,8 @@ class DummyInfoBroker(ib.InfoRouter):
         return ' '.join(envlist_repr)
 
 class DummyServiceComposer(object):
-    def __init__(self, infobroker):
-        self.ib = infobroker
+    def __init__(self):
+        self.ib = ib.main_info_broker
     def register_node(self, node):
         log.debug("[SC] Registering node: %r", node)
         self.ib.environments[node['infra_id']].append(node)
@@ -132,8 +132,8 @@ class DummyServiceComposer(object):
         log.debug("[SC] Done - '%r'", self.ib)
 
 class DummyCloudHandler(object):
-    def __init__(self, infobroker):
-        self.ib = infobroker
+    def __init__(self):
+        self.ib = ib.main_info_broker
     def create_node(self, node):
         log.debug("[CH] Creating node: %r", node)
         node['_started'] = True
