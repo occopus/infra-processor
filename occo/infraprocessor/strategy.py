@@ -114,9 +114,9 @@ class SequentialStrategy(Strategy):
         if isinstance(reason, NodeCreationError):
             inst_data = reason.instance_data
             log.debug('Undoing create node for %r', inst_data['node_id'])
-            undo_command = infraprocessor.cri_drop_node(inst_data)
+            undo_command = self.infraprocessor.cri_drop_node(inst_data)
             try:
-                undo_command.perform(infraprocessor)
+                undo_command.perform(self.infraprocessor)
             except Exception:
                 # TODO: maybe store instance_data in UDS in case it's stuck?
                 log.exception(
@@ -125,6 +125,7 @@ class SequentialStrategy(Strategy):
         self.cancelled = True
 
     def _perform(self, infraprocessor, instruction_list):
+        self.infraprocessor = infraprocessor
         self.cancelled = False
         log.debug('Peforming instructions SEQUENTIALLY: %r',
                   instruction_list)
