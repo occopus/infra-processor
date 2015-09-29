@@ -22,6 +22,7 @@ import jinja2
 from occo.infraprocessor.node_resolution import Resolver
 
 log = logging.getLogger('occo.infraprocessor.node_resolution.cloudbroker')
+datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.cloudbroker')
 
 @factory.register(Resolver, 'cloudbroker')
 class CloudBrokerResolver(Resolver):
@@ -30,6 +31,28 @@ class CloudBrokerResolver(Resolver):
 
     .. _`cloudbroker`: http://cloudbroker.com
     """
+
+    def extract_template(self, temp_name, node_definition):
+
+        def context_list():
+            # `context_template` is also removed from the definition, as
+            # it will be replaced with the rendered `context`
+            yield ('node_definition',
+                   node_definition.pop(temp_name, None))
+
+            from occo.infobroker import main_info_broker
+            sc_data = main_info_broker.get(
+                'service_composer.aux_data',
+                node_definition['service_composer_id'])
+            yield ('service_composer_default',
+                   sc_data.get(temp_name, None))
+
+            yield 'default', ''
+
+        src, template = util.find_effective_setting(context_list())
+        datalog.debug('Context template from %s:\n%s', src, template)
+
+        return jinja2.Template(template)
 
     def attr_template_resolve(self, attrs, template_data):
         """
@@ -133,6 +156,11 @@ class CloudBrokerResolver(Resolver):
         source_data['find_node_id'] = find_node_id
         return source_data
 
+    def render_template(self, temp_name, node_definition, template_data):
+        """Renders the template pertaining to the node definition"""
+        template = self.extract_template(temp_name, node_definition)
+        return template.render(**template_data)
+
     def _resolve_node(self, node_definition):
         """
         Implementation of :meth:`Resolver.resolve_node`.
@@ -152,6 +180,10 @@ class CloudBrokerResolver(Resolver):
             'auth_data'   : ib.get('backends.auth_data',
                                    node_definition['backend_id'],
                                    node_desc['user_id']),
+            'app-data'    : self.render_template('jobflow_config_app', node_definition,
+                                                 template_data),
+            'sys-data'    : self.render_template('jobflow_config_sys', node_definition,
+                                                 template_data),
             'attributes'  : self.resolve_attributes(node_desc,
                                                     node_definition,
                                                     template_data),
