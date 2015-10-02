@@ -159,7 +159,17 @@ class CloudBrokerResolver(Resolver):
     def render_template(self, temp_name, node_definition, template_data):
         """Renders the template pertaining to the node definition"""
         template = self.extract_template(temp_name, node_definition)
+        datalog.debug('About to render template:\n%s', template)
         return template.render(**template_data)
+
+    def render_template_files(self, node_definition, template_data):
+        """Renders the template files"""
+        if 'template_files' not in node_definition:
+            return []
+        temp_files = node_definition['template_files']
+        for tfile in temp_files:
+            tfile['content'] = self.render_template('content_template', tfile, template_data)
+        return temp_files
 
     def _resolve_node(self, node_definition):
         """
@@ -174,19 +184,19 @@ class CloudBrokerResolver(Resolver):
 
         # Amend resolved node with new information
         data = {
-            'node_id'     : node_id,
-            'name'        : node_desc['name'],
-            'infra_id'    : node_desc['infra_id'],
-            'auth_data'   : ib.get('backends.auth_data',
+            'node_id'        : node_id,
+            'name'           : node_desc['name'],
+            'infra_id'       : node_desc['infra_id'],
+            'auth_data'      : ib.get('backends.auth_data',
                                    node_definition['backend_id'],
                                    node_desc['user_id']),
-            'app-data'    : self.render_template('jobflow_config_app', node_definition,
-                                                 template_data),
-            'sys-data'    : self.render_template('jobflow_config_sys', node_definition,
-                                                 template_data),
-            'attributes'  : self.resolve_attributes(node_desc,
-                                                    node_definition,
-                                                    template_data),
-            'synch_attrs' : self.extract_synch_attrs(node_desc),
+            'template_files' : self.render_template_files(node_definition,
+                                                          template_data),
+            'attributes'     : self.resolve_attributes(node_desc,
+                                                       node_definition,
+                                                       template_data),
+            'synch_attrs'    : self.extract_synch_attrs(node_desc),
         }
+        if 'files' in node_desc:
+            data['files'] = node_desc['files']
         node_definition.update(data)
