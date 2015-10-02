@@ -164,6 +164,8 @@ class CloudBrokerResolver(Resolver):
 
     def render_template_files(self, node_definition, template_data):
         """Renders the template files"""
+        if 'template_files' not in node_definition:
+            return []
         temp_files = node_definition['template_files']
         for tfile in temp_files:
             tfile['content'] = self.render_template('content_template', tfile, template_data)
@@ -194,6 +196,7 @@ class CloudBrokerResolver(Resolver):
                                                        node_definition,
                                                        template_data),
             'synch_attrs'    : self.extract_synch_attrs(node_desc),
-            'files'          : node_desc['files'],
         }
+        if 'files' in node_desc:
+            data['files'] = node_desc['files']
         node_definition.update(data)
