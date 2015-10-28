@@ -24,6 +24,7 @@ setuptools.setup(
         'occo.infraprocessor.synchronization.primitives',
         'occo.plugins.infraprocessor.basic_infraprocessor',
         'occo.plugins.infraprocessor.node_resolution.chef_cloudinit',
+        'occo.plugins.infraprocessor.node_resolution.cloudbroker',
     ],
     scripts=[],
     url='http://www.lpds.sztaki.hu/',
