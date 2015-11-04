@@ -1,0 +1,6 @@
+autoimport: !python_import
+    - occo.infobroker.eventlog
+logging: !yaml_import
+    url: file://logging.yaml
+eventlog: !EventLog
+    protocol: logging

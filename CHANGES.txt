@@ -1,1 +1,10 @@
-v0.1.0 -- Initial release
+
+v0.2.0 - November 2015
+- Execute instructions by cloud handler initiated by from enactor
+- Implement instruction set
+- Implement parallelized strategy for performing instructions
+- Implement pluginable node resolution 
+- Add chef+cloudinit node resolver
+- Add synchronization primitives
+- Error handling and rollback
+- Add CloudBroker node resolver

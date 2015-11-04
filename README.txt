@@ -1,5 +1,3 @@
-===
-OCCO Infrastructure Processor
-===
 
-OCCO Infrastructure Processor module and daemon
+Occopus Infrastructure Processor Module providing infrastructure maintenance in Occopus.
+
