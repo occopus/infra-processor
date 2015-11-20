@@ -35,14 +35,14 @@ class MysqlServerSynchStragegy(NodeSynchStrategy):
                                        node_id = self.node_id):
             return False
         try:
+            dblist = self.get_kwargs().get('databases', list())
             log.debug('Checking mysql database availability:')
-            db = MySQLdb.connect(
-                host,
-                self.node_description['variables']['mysql_dbuser_username'],
-                self.node_description['variables']['mysql_dbuser_password'],
-                self.node_description['variables']['mysql_database_name'])
+            for db in dblist:
+                conn = MySQLdb.connect(
+                    host, db.get('user'), db.get('pass'),
+                    db.get('name'))
+                conn.close()
             log.debug('Connection successful')
-            db.close()
         except MySQLdb.Error as e:
             log.debug('Connecton failed: %s',e)
             return False
