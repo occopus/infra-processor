@@ -32,6 +32,7 @@ import logging
 import occo.util as util
 import occo.infobroker as ib
 from occo.exceptions import ConnectionError, HTTPTimeout, HTTPError
+import occo.constants.status as node_status
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 
@@ -42,7 +43,7 @@ DUMMY_REPORT = dict(
 )
 
 def format_bool(b):
-    return 'OK' if b else 'PENDING'
+    return 'READY' if b else 'PENDING'
 
 class StatusItem(object):
     def __init__(self, description, fun):
@@ -160,3 +161,14 @@ class SynchronizationProvider(ib.InfoProvider):
                     for j in details.itervalues()
                     for i in j.itervalues())
         return dict(details=details, ready=ready)
+
+    @ib.provides('node.service_health_check.state')
+    @util.wet_method('READY')
+    def service_verification_state(self, instance_data):
+        log.debug('Acquiring service health check state')
+        from ..synchronization import get_synch_strategy
+        strategy = get_synch_strategy(instance_data)
+        state = strategy.is_ready()
+        return node_status.READY if state else node_status.PENDING
+
+

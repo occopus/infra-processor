@@ -88,7 +88,6 @@ def get_synch_strategy(instance_data):
         synch_type, node_description,
         resolved_node_definition, instance_data)
 
-
 def wait_for_node(instance_data,
                   poll_delay=10, timeout=None, cancel_event=None):
     """
@@ -106,7 +105,6 @@ def wait_for_node(instance_data,
     :param cancel_event: The polling will be cancelled when this event is set.
     :type cancel_event: :class:`threading.Event`
     """
-    synch = get_synch_strategy(instance_data)
 
     node_id = instance_data['node_id']
 
@@ -121,7 +119,8 @@ def wait_for_node(instance_data,
     else:
         log.info('Waiting for node %r to become ready. No timeout.', node_id)
 
-    while not synch.is_ready():
+    status = ib.get('node.state', instance_data)
+    while status != node_status.READY:
         if timeout and time.time() > finish_time:
             raise NodeCreationTimeOutError(
                     instance_data=instance_data,
@@ -129,7 +128,6 @@ def wait_for_node(instance_data,
                     msg=('Timeout ({0}s) in node creation!'
                          .format(timeout)))
 
-        status = ib.get('node.state', instance_data)
         if status in [node_status.SHUTDOWN, node_status.FAIL]:
             raise NodeFailedError(instance_data, status)
 
@@ -138,6 +136,7 @@ def wait_for_node(instance_data,
         if not sleep(poll_delay, cancel_event):
             log.debug('Waiting for node %r has been cancelled.', node_id)
             return
+        status = ib.get('node.state', instance_data)
 
     log.info('Node %r is ready.', node_id)
 
@@ -193,7 +192,6 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     """
     Default synchronization strategy. This strategy ensures the following
     properties of the node:
-      - Status (as reported by the InfoBroker)
       - Network reachability (using ping)
       - URLs available (using a HEAD request)
       - Availability of attributes
@@ -211,13 +209,6 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     """
     def is_ready(self):
         return self.get_composite_status(basic_status)
-
-    @status_component('Backend status', basic_status)
-    def status_ready(self):
-        log.debug('Checking node status for %r', self.node_id)
-        status = ib.get('node.state', self.instance_data)
-        log.info('Status of node %r is %r', self.node_id, status)
-        return status == node_status.READY
 
     def get_kwargs(self):
         """
