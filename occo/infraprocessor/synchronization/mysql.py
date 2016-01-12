@@ -33,7 +33,7 @@ class MysqlServerSynchStragegy(NodeSynchStrategy):
     def get_kwargs(self):
         if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
-                'synch_strategy', dict())
+                'service_health_check', dict())
             if isinstance(self.kwargs, basestring):
                 self.kwargs = dict()
         return self.kwargs

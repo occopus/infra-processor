@@ -54,16 +54,16 @@ def node_synch_type(resolved_node_definition):
     # Can be specified by the node definition (implementation).
     # A node definition based on legacy material can even define an ad-hoc
     # strategy for that sole node type:
-    synchstrat = resolved_node_definition.get('synch_strategy')
+    synchstrat = resolved_node_definition.get('service_health_check')
     if synchstrat:
         # The synch strategy may be parameterizable (like 'basic' is)
         key = synchstrat['protocol'] \
             if isinstance(synchstrat, dict) \
             else synchstrat
-        src = 'node_definitioni.synch_strategy'
+        src = 'node_definition.service_health_check'
         if not NodeSynchStrategy.has_backend(key):
             # If specified, but unknown, that is an error (typo or misconfig.)
-            raise ValueError('Unknown synch_strategy', key)
+            raise ValueError('Unknown service_health_check', key)
     else:
         # No special synch strategy has been defined.
         # Trying a generic synch strategy for the implementation type
@@ -217,9 +217,9 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         """
         if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
-                'synch_strategy', dict())
+                'service_health_check', dict())
             if isinstance(self.kwargs, basestring):
-                # synch_strategy has been specified as a non-parameterized
+                # service_health_check has been specified as a non-parameterized
                 # string.
                 self.kwargs = dict()
         return self.kwargs
