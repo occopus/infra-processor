@@ -47,6 +47,7 @@ setuptools.setup(
     install_requires=[
         'argparse',
         'Jinja2',
+        'mysql-python',
         'python-dateutil',
         'PyYAML',
         'OCCO-InfoBroker',
