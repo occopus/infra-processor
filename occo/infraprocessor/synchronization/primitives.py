@@ -108,8 +108,7 @@ class SynchronizationProvider(ib.InfoProvider):
     @ib.provides('synch.node_reachable')
     @ib.provides('node.network_reachable')
     @util.wet_method(True)
-    def reachable(self, **node_spec):
-        addr = ib.main_info_broker.get('node.address', **node_spec)
+    def reachable(self, addr):
         try:
             retval, out, err = \
                 util.basic_run_process(
@@ -123,11 +122,27 @@ class SynchronizationProvider(ib.InfoProvider):
             log.debug('Process exit code: %d', retval)
             return (retval == 0)
 
+    @ib.provides('synch.port_available')
+    @util.wet_method(True)
+    def port_available(self, host, port):
+	import socket
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            log.debug('Checking port availability: %r', port)
+	    s.connect((host, port))
+	    s.shutdown(2)
+	    s.close()
+        except:
+            log.warning('Error accessing port %s', port)
+            return False
+        else:
+            return True
+
     @ib.provides('synch.site_available')
     @util.wet_method(True)
     def site_available(self, url, **kwargs):
         try:
-            log.debug('Checking site availability: %r', url)
+            log.debug('Checking url availability: %r', url)
             response = util.do_request(url, 'head', **kwargs)
         except (ConnectionError, HTTPTimeout, HTTPError) as ex:
             log.warning('Error accessing [%s]: %s', url, ex)

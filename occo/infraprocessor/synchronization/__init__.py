@@ -166,6 +166,7 @@ class NodeSynchStrategy(factory.MultiBackend):
         self.instance_data = instance_data
         self.node_id = instance_data['node_id']
         self.infra_id = resolved_node_definition['infra_id']
+	self.node_address = ib.get('node.address', infra_id=self.infra_id, node_id=self.node_id)
 
     def generate_report(self):
         """
@@ -228,7 +229,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         return dict(infra_id=self.infra_id, node_id=self.node_id)
 
     def get_node_address(self):
-        return ib.get('node.address', **self.make_node_spec())
+	return self.node_address
 
     def resolve_url(self, fmt):
         """
@@ -247,12 +248,26 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
     @status_component('Network reachability', basic_status)
     def reachable(self):
+	host = self.get_node_address()
         if self.get_kwargs().get('ping', True):
             log.debug('Checking node reachability (%s)', self.node_id)
-            return ib.get('synch.node_reachable', **self.make_node_spec())
+            return ib.get('synch.node_reachable', host)
         else:
             log.debug('Skipping.')
             return True
+
+    @status_component('Port Availability', basic_status)
+    def ports_ready(self):
+        host = self.get_node_address()
+        ports = self.get_kwargs().get('ports', list())
+        for port in ports:
+            available = ib.get('synch.port_available', host, port)
+            if not available:
+                log.info('Port %s is still not available.', port)
+                return False
+            else:
+                log.info('Port %s has become available.', port)
+        return True
 
     @status_component('URL Availability', basic_status)
     def urls_ready(self):
@@ -266,7 +281,6 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
                 return False
             else:
                 log.info('Site %r has become available.', url)
-
         return True
 
     @status_component('Attribute Availability', basic_status)
