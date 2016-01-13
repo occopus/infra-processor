@@ -297,3 +297,18 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
         log.info('All attributes of node %r are available.', node_id)
         return True
+
+    @status_component('Mysql database availability', basic_status)
+    def mysqldbs_ready(self):
+        host = self.get_node_address()
+        dblist = self.get_kwargs().get('mysqldbs', list())
+        log.debug('Checking mysql database(s) availability:')
+        for db in dblist:
+            available = ib.get('synch.mysql_ready', host, db.get('name'),
+                    db.get('user'), db.get('pass'))
+            if not available:
+                log.info('Mysql database \'%r\' is still not available.', db.get('name'))
+                return False
+            else:
+                log.info('Mysql database \'%r\' has become available.', db.get('name'))
+        return True

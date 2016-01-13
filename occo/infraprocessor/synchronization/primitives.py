@@ -135,6 +135,20 @@ class SynchronizationProvider(ib.InfoProvider):
         else:
             return response.success
 
+    @ib.provides('synch.mysql_ready')
+    @util.wet_method(True)
+    def mysql_ready(self, host, dbname, dbuser, dbpass):
+        import MySQLdb
+        try:
+            log.debug('Checking mysqldb name: %s, user: %s, pass: %s',dbname,dbuser,dbpass)
+            conn = MySQLdb.connect(host, dbuser, dbpass, dbname)
+            conn.close()
+            log.debug('Connection successful')
+        except MySQLdb.Error as e:
+            log.debug('Connecton failed: %s',e)
+            return False
+        return True
+
     @ib.provides('node.state_report')
     @util.wet_method(DUMMY_REPORT)
     def node_state_report(self, instance_data):
