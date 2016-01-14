@@ -274,7 +274,6 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         urls = self.get_kwargs().get('urls', list())
         for fmt in urls:
             url = self.resolve_url(fmt)
-            log.debug('Checking URL availability: %r', url)
             available = ib.get('synch.site_available', url)
             if not available:
                 log.info('Site %r is still not available.', url)
@@ -316,7 +315,6 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def mysqldbs_ready(self):
         host = self.get_node_address()
         dblist = self.get_kwargs().get('mysqldbs', list())
-        log.debug('Checking mysql database(s) availability:')
         for db in dblist:
             available = ib.get('synch.mysql_ready', host, db.get('name'),
                     db.get('user'), db.get('pass'))
