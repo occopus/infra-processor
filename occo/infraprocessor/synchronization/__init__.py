@@ -231,15 +231,12 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def get_node_address(self):
 	return self.node_address
 
-    def resolve_url(self, fmt):
-        """
-        .. todo:: Document the data that can be used in the URL template.
-        """
+    def resolve_parameter(self, fmt):
         data = dict(
             node_id=self.instance_data['node_id'],
             ibget=ib.get,
             instance_data=self.instance_data,
-            variables=self.node_description['variables'],
+            variables=self.node_description.get('variables'),
             addr=self.get_node_address(),
         )
         import jinja2
@@ -273,7 +270,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def urls_ready(self):
         urls = self.get_kwargs().get('urls', list())
         for fmt in urls:
-            url = self.resolve_url(fmt)
+            url = self.resolve_parameter(fmt)
             available = ib.get('synch.site_available', url)
             if not available:
                 log.info('Site %r is still not available.', url)
@@ -316,11 +313,14 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         host = self.get_node_address()
         dblist = self.get_kwargs().get('mysqldbs', list())
         for db in dblist:
-            available = ib.get('synch.mysql_ready', host, db.get('name'),
-                    db.get('user'), db.get('pass'))
+            name = self.resolve_parameter(db.get('name'))
+            user = self.resolve_parameter(db.get('user'))
+            pwd = self.resolve_parameter(db.get('pass')) 
+            available = ib.get('synch.mysql_ready', host, name, user, pwd)
             if not available:
-                log.info('Mysql database \'%r\' is still not available.', db.get('name'))
+                log.info('Mysql database \'%r\' is still not available.', name)
                 return False
             else:
-                log.info('Mysql database \'%r\' has become available.', db.get('name'))
+                log.info('Mysql database \'%r\' has become available.', name)
         return True
+
