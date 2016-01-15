@@ -54,16 +54,16 @@ def node_synch_type(resolved_node_definition):
     # Can be specified by the node definition (implementation).
     # A node definition based on legacy material can even define an ad-hoc
     # strategy for that sole node type:
-    synchstrat = resolved_node_definition.get('synch_strategy')
+    synchstrat = resolved_node_definition.get('service_health_check')
     if synchstrat:
         # The synch strategy may be parameterizable (like 'basic' is)
         key = synchstrat['protocol'] \
             if isinstance(synchstrat, dict) \
             else synchstrat
-        src = 'node_definitioni.synch_strategy'
+        src = 'node_definition.service_health_check'
         if not NodeSynchStrategy.has_backend(key):
             # If specified, but unknown, that is an error (typo or misconfig.)
-            raise ValueError('Unknown synch_strategy', key)
+            raise ValueError('Unknown service_health_check', key)
     else:
         # No special synch strategy has been defined.
         # Trying a generic synch strategy for the implementation type
@@ -88,7 +88,6 @@ def get_synch_strategy(instance_data):
         synch_type, node_description,
         resolved_node_definition, instance_data)
 
-
 def wait_for_node(instance_data,
                   poll_delay=10, timeout=None, cancel_event=None):
     """
@@ -106,7 +105,6 @@ def wait_for_node(instance_data,
     :param cancel_event: The polling will be cancelled when this event is set.
     :type cancel_event: :class:`threading.Event`
     """
-    synch = get_synch_strategy(instance_data)
 
     node_id = instance_data['node_id']
 
@@ -121,7 +119,8 @@ def wait_for_node(instance_data,
     else:
         log.info('Waiting for node %r to become ready. No timeout.', node_id)
 
-    while not synch.is_ready():
+    status = ib.get('node.state', instance_data)
+    while status != node_status.READY:
         if timeout and time.time() > finish_time:
             raise NodeCreationTimeOutError(
                     instance_data=instance_data,
@@ -129,7 +128,6 @@ def wait_for_node(instance_data,
                     msg=('Timeout ({0}s) in node creation!'
                          .format(timeout)))
 
-        status = ib.get('node.state', instance_data)
         if status in [node_status.SHUTDOWN, node_status.FAIL]:
             raise NodeFailedError(instance_data, status)
 
@@ -138,6 +136,7 @@ def wait_for_node(instance_data,
         if not sleep(poll_delay, cancel_event):
             log.debug('Waiting for node %r has been cancelled.', node_id)
             return
+        status = ib.get('node.state', instance_data)
 
     log.info('Node %r is ready.', node_id)
 
@@ -167,6 +166,7 @@ class NodeSynchStrategy(factory.MultiBackend):
         self.instance_data = instance_data
         self.node_id = instance_data['node_id']
         self.infra_id = resolved_node_definition['infra_id']
+	self.node_address = ib.get('node.address', infra_id=self.infra_id, node_id=self.node_id)
 
     def generate_report(self):
         """
@@ -193,7 +193,6 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     """
     Default synchronization strategy. This strategy ensures the following
     properties of the node:
-      - Status (as reported by the InfoBroker)
       - Network reachability (using ping)
       - URLs available (using a HEAD request)
       - Availability of attributes
@@ -212,13 +211,6 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def is_ready(self):
         return self.get_composite_status(basic_status)
 
-    @status_component('Backend status', basic_status)
-    def status_ready(self):
-        log.debug('Checking node status for %r', self.node_id)
-        status = ib.get('node.state', self.instance_data)
-        log.info('Status of node %r is %r', self.node_id, status)
-        return status == node_status.READY
-
     def get_kwargs(self):
         """
         .. todo:: Make this more generic (not only BasicNodeSynchStrategy will
@@ -226,9 +218,9 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         """
         if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
-                'synch_strategy', dict())
+                'service_health_check', dict())
             if isinstance(self.kwargs, basestring):
-                # synch_strategy has been specified as a non-parameterized
+                # service_health_check has been specified as a non-parameterized
                 # string.
                 self.kwargs = dict()
         return self.kwargs
@@ -237,17 +229,14 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         return dict(infra_id=self.infra_id, node_id=self.node_id)
 
     def get_node_address(self):
-        return ib.get('node.address', **self.make_node_spec())
+	return self.node_address
 
-    def resolve_url(self, fmt):
-        """
-        .. todo:: Document the data that can be used in the URL template.
-        """
+    def resolve_parameter(self, fmt):
         data = dict(
             node_id=self.instance_data['node_id'],
             ibget=ib.get,
             instance_data=self.instance_data,
-            variables=self.node_description['variables'],
+            variables=self.node_description.get('variables'),
             addr=self.get_node_address(),
         )
         import jinja2
@@ -256,26 +245,38 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
     @status_component('Network reachability', basic_status)
     def reachable(self):
+	host = self.get_node_address()
         if self.get_kwargs().get('ping', True):
             log.debug('Checking node reachability (%s)', self.node_id)
-            return ib.get('synch.node_reachable', **self.make_node_spec())
+            return ib.get('synch.node_reachable', host)
         else:
             log.debug('Skipping.')
             return True
+
+    @status_component('Port Availability', basic_status)
+    def ports_ready(self):
+        host = self.get_node_address()
+        ports = self.get_kwargs().get('ports', list())
+        for port in ports:
+            available = ib.get('synch.port_available', host, port)
+            if not available:
+                log.info('Port %s is still not available.', port)
+                return False
+            else:
+                log.info('Port %s has become available.', port)
+        return True
 
     @status_component('URL Availability', basic_status)
     def urls_ready(self):
         urls = self.get_kwargs().get('urls', list())
         for fmt in urls:
-            url = self.resolve_url(fmt)
-            log.debug('Checking URL availability: %r', url)
+            url = self.resolve_parameter(fmt)
             available = ib.get('synch.site_available', url)
             if not available:
                 log.info('Site %r is still not available.', url)
                 return False
             else:
                 log.info('Site %r has become available.', url)
-
         return True
 
     @status_component('Attribute Availability', basic_status)
@@ -306,3 +307,20 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
         log.info('All attributes of node %r are available.', node_id)
         return True
+
+    @status_component('Mysql database availability', basic_status)
+    def mysqldbs_ready(self):
+        host = self.get_node_address()
+        dblist = self.get_kwargs().get('mysqldbs', list())
+        for db in dblist:
+            name = self.resolve_parameter(db.get('name'))
+            user = self.resolve_parameter(db.get('user'))
+            pwd = self.resolve_parameter(db.get('pass')) 
+            available = ib.get('synch.mysql_ready', host, name, user, pwd)
+            if not available:
+                log.info('Mysql database \'%r\' is still not available.', name)
+                return False
+            else:
+                log.info('Mysql database \'%r\' has become available.', name)
+        return True
+

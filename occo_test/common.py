@@ -42,7 +42,7 @@ dummydata = yaml.load(
             implementation_type: chef+cloudinit
             service_composer_id: null
             backend_id: null
-            synch_strategy:
+            service_health_check:
                 protocol: basic
                 ping: false
             attributes:
@@ -52,10 +52,10 @@ dummydata = yaml.load(
                   - attr4
         synch1:
             <<: *DN
-            synch_strategy: basic
+            service_health_check: basic
         synch_bad:
             <<: *DN
-            synch_strategy: nonexistent
+            service_health_check: nonexistent
     """)
 
 class DummyNode(dict):

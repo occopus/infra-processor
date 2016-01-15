@@ -32,6 +32,7 @@ import logging
 import occo.util as util
 import occo.infobroker as ib
 from occo.exceptions import ConnectionError, HTTPTimeout, HTTPError
+import occo.constants.status as node_status
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 
@@ -42,7 +43,7 @@ DUMMY_REPORT = dict(
 )
 
 def format_bool(b):
-    return 'OK' if b else 'PENDING'
+    return 'READY' if b else 'PENDING'
 
 class StatusItem(object):
     def __init__(self, description, fun):
@@ -107,8 +108,7 @@ class SynchronizationProvider(ib.InfoProvider):
     @ib.provides('synch.node_reachable')
     @ib.provides('node.network_reachable')
     @util.wet_method(True)
-    def reachable(self, **node_spec):
-        addr = ib.main_info_broker.get('node.address', **node_spec)
+    def reachable(self, addr):
         try:
             retval, out, err = \
                 util.basic_run_process(
@@ -122,17 +122,47 @@ class SynchronizationProvider(ib.InfoProvider):
             log.debug('Process exit code: %d', retval)
             return (retval == 0)
 
+    @ib.provides('synch.port_available')
+    @util.wet_method(True)
+    def port_available(self, host, port):
+	import socket
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            log.debug('Checking port availability: %r', port)
+	    s.connect((host, port))
+	    s.shutdown(2)
+	    s.close()
+        except:
+            log.warning('Error accessing port %s', port)
+            return False
+        else:
+            return True
+
     @ib.provides('synch.site_available')
     @util.wet_method(True)
     def site_available(self, url, **kwargs):
         try:
-            log.debug('Checking site availability: %r', url)
+            log.debug('Checking url availability: %r', url)
             response = util.do_request(url, 'head', **kwargs)
         except (ConnectionError, HTTPTimeout, HTTPError) as ex:
             log.warning('Error accessing [%s]: %s', url, ex)
             return False
         else:
             return response.success
+
+    @ib.provides('synch.mysql_ready')
+    @util.wet_method(True)
+    def mysql_ready(self, host, dbname, dbuser, dbpass):
+        import MySQLdb
+        try:
+            log.debug('Checking mysqldb name: %s, user: %s, pass: %s',dbname,dbuser,dbpass)
+            conn = MySQLdb.connect(host, dbuser, dbpass, dbname)
+            conn.close()
+            log.debug('Connection successful')
+        except MySQLdb.Error as e:
+            log.debug('Connecton failed: %s',e)
+            return False
+        return True
 
     @ib.provides('node.state_report')
     @util.wet_method(DUMMY_REPORT)
@@ -160,3 +190,14 @@ class SynchronizationProvider(ib.InfoProvider):
                     for j in details.itervalues()
                     for i in j.itervalues())
         return dict(details=details, ready=ready)
+
+    @ib.provides('node.service_health_check.state')
+    @util.wet_method('READY')
+    def service_verification_state(self, instance_data):
+        log.debug('Acquiring service health check state')
+        from ..synchronization import get_synch_strategy
+        strategy = get_synch_strategy(instance_data)
+        state = strategy.is_ready()
+        return node_status.READY if state else node_status.PENDING
+
+
