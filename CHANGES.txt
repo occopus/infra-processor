@@ -8,3 +8,12 @@ v0.2.0 - November 2015
 - Add synchronization primitives
 - Error handling and rollback
 - Add CloudBroker node resolver
+
+v0.3.0 - January 2016
+- integrate mysql synch_strategy into basic strategy
+- rename sunch_strategy to service_health_check
+- mysql synch now checks list of databases
+- node status check includes: service health checking
+- new service health check: port checking
+- add mysql-python as dependency
+
