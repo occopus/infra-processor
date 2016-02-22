@@ -43,7 +43,7 @@ DUMMY_REPORT = dict(
 )
 
 def format_bool(b):
-    return 'READY' if b else 'PENDING'
+    return node_status.READY if b else node_status.PENDING
 
 class StatusItem(object):
     def __init__(self, description, fun):
@@ -192,7 +192,7 @@ class SynchronizationProvider(ib.InfoProvider):
         return dict(details=details, ready=ready)
 
     @ib.provides('node.service_health_check.state')
-    @util.wet_method('READY')
+    @util.wet_method(node_status.READY)
     def service_verification_state(self, instance_data):
         log.debug('Acquiring service health check state')
         from ..synchronization import get_synch_strategy
