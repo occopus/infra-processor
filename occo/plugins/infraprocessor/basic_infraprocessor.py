@@ -165,7 +165,7 @@ class CreateNode(Command):
         datalog.debug("Resolved node description:\n%s",
                       yaml.dump(resolved_node_def, default_flow_style=False))
         instance_data['resolved_node_definition'] = resolved_node_def
-        instance_data['backend_id'] = resolved_node_def['backend_id']
+        instance_data['resource'] = resolved_node_def['resource']
 
         # Create the node based on the resolved information
         infraprocessor.servicecomposer.register_node(resolved_node_def)

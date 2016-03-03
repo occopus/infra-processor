@@ -233,7 +233,7 @@ class ChefCloudinitResolver(Resolver):
             'name'        : node_desc['name'],
             'infra_id'    : node_desc['infra_id'],
             'auth_data'   : ib.get('backends.auth_data',
-                                   node_definition['backend_id'],
+                                   node_definition['resource']['endpoint'],
                                    node_desc['user_id']),
             'context'     : self.render_template(node_definition,
                                                  template_data),
