@@ -90,7 +90,7 @@ class CreateNode(Command):
     """
     Implementation of node creation using a
     :ref:`service composer <servicecomposer>` and a
-    :ref:`cloud handler <cloudhandler>`.
+    :ref:`resource handler <resourcehandler>`.
 
     :param node: The description of the node to be created.
     :type node: :ref:`nodedescription`
@@ -169,7 +169,7 @@ class CreateNode(Command):
 
         # Create the node based on the resolved information
         infraprocessor.servicecomposer.register_node(resolved_node_def)
-        instance_id = infraprocessor.cloudhandler.create_node(resolved_node_def)
+        instance_id = infraprocessor.resourcehandler.create_node(resolved_node_def)
         instance_data['instance_id'] = instance_id
 
         import occo.infraprocessor.synchronization as synch
@@ -222,7 +222,7 @@ class DropNode(Command):
     """
     Implementation of node deletion using a
     :ref:`service composer <servicecomposer>` and a
-    :ref:`cloud handler <cloudhandler>`.
+    :ref:`resource handler <resourcehandler>`.
 
     :param instance_data: The description of the node instance to be deleted.
     :type instance_data: :ref:`instancedata`
@@ -235,7 +235,7 @@ class DropNode(Command):
     def perform(self, infraprocessor):
         try:
             log.debug('Dropping node %r', self.instance_data['node_id'])
-            infraprocessor.cloudhandler.drop_node(self.instance_data)
+            infraprocessor.resourcehandler.drop_node(self.instance_data)
             infraprocessor.servicecomposer.drop_node(self.instance_data)
             infraprocessor.uds.remove_nodes(self.instance_data['infra_id'],
                                             self.instance_data['node_id'])
@@ -293,8 +293,8 @@ class BasicInfraProcessor(InfraProcessor):
     :param user_data_store: Database manipulation.
     :type user_data_store: :class:`~occo.infobroker.UDS`
 
-    :param cloudhandler: Cloud access.
-    :type cloudhandler: :class:`~occo.cloudhandler.cloudhandler.CloudHandler`
+    :param resourcehandler: Resource access.
+    :type resourcehandler: :class:`~occo.resourcehandler.resourcehandler.ResourceHandler`
 
     :param servicecomposer: Service composer access.
     :type servicecomposer:
@@ -316,7 +316,7 @@ class BasicInfraProcessor(InfraProcessor):
             process_strategy=process_strategy)
         self.ib = ib.main_info_broker
         self.uds = ib.main_uds
-        self.cloudhandler = ib.main_cloudhandler
+        self.resourcehandler = ib.main_resourcehandler
         self.servicecomposer = ib.main_servicecomposer
         self.poll_delay = poll_delay
 

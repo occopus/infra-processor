@@ -23,7 +23,7 @@ necessary to actually create and build such a node on a given backend.
 
 The correct resolution algorithm **depends on** the type of description, which
 is a function of the type of the **service composer** and the type of the
-**cloud handler** used to instantiate the node. Because of this dependency,
+**resource handler** used to instantiate the node. Because of this dependency,
 the resolution utilises the :mod:`Factory <occo.util.factory>` pattern to
 select the correct :class:`Resolver`.
 """
@@ -117,7 +117,7 @@ class Resolver(factory.MultiBackend):
         in-place with the necessary information. ``node_definition`` is also
         returned for convenience. The resulting :ref:`resolved node definition
         <resolvednode>` must contain all information intended for both the
-        service composer and the cloud handler.
+        service composer and the resource handler.
 
         :param node_definition: The definition that needs to be resolved.
             The definition will be updated in place.

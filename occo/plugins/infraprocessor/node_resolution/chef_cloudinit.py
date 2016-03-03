@@ -44,8 +44,8 @@ class ChefCloudinitResolver(Resolver):
 
     This resolver updates the node definition with infromation required by the
     Chef :ref:`Service Composer <servicecomposer>` and any kind of :ref:`Cloud
-    Handler <cloudhandler>` that uses cloud-init; for example the
-    :class:`~occo.cloudhandler.backend.boto.BotoCloudHandler`.
+    Handler <resourcehandler>` that uses cloud-init; for example the
+    :class:`~occo.resourcehandler.backend.ec2.EC2ResourceHandler`.
 
     .. todo:: This aspect of OCCO (resolving) must be thought over.
 

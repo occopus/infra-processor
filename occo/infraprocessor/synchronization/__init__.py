@@ -148,7 +148,7 @@ class NodeSynchStrategy(factory.MultiBackend):
         It is the same as the input of the InfraProcessor's CreateNode command.
 
     :param resolved_node_definition: The node definition as resolved by the
-        InfraProcessor. It is the same as the input of the CloudHandler and
+        InfraProcessor. It is the same as the input of the ResourceHandler and
         ServiceComposer's CreateNode commands.
 
     :param instance_data: The instance data as provided by the InfraProcessor
