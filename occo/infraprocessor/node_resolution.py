@@ -52,8 +52,8 @@ def resolve_node(ib, node_id, node_description, default_timeout=None):
         'node.definition',
         node_description['type'],
         preselected_backend_ids=(
-            node_description.get('backend_id')
-            or node_description.get('backend_ids')),
+            node_description.get('selected_resource_handler')
+            or node_description.get('selected_resource_handlers')),
         strategy=node_description.get('backend_selection_strategy', 'random'))
 
     resolver = Resolver.instantiate(
