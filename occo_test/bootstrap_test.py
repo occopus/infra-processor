@@ -26,12 +26,12 @@ class BaseTest(unittest.TestCase):
     def setUp(self):
         self.ib = ib.real_main_info_broker = DummyInfoBroker()
     def test_sc_create_infrastructure(self):
-        sc = DummyServiceComposer()
+        sc = DummyConfigManager()
         nid = uid()
         sc.create_infrastructure(nid)
         self.assertEqual(repr(self.ib), '{0}:[]'.format(nid))
     def test_sc_register_node(self):
-        sc = DummyServiceComposer()
+        sc = DummyConfigManager()
         eid = uid()
         sc.create_infrastructure(eid)
         node = DummyNode(eid, uid())
@@ -40,7 +40,7 @@ class BaseTest(unittest.TestCase):
             repr(self.ib),
             '{0}:[{1}_False]'.format(eid, node['node_id']))
     def test_ch_create_node(self):
-        sc = DummyServiceComposer()
+        sc = DummyConfigManager()
         ch = DummyCloudHandler()
         eid = uid()
         sc.create_infrastructure(eid)
@@ -51,7 +51,7 @@ class BaseTest(unittest.TestCase):
             repr(self.ib),
             '{0}:[{1}_True]'.format(eid, node['node_id']))
     def test_ch_drop_node(self):
-        sc = DummyServiceComposer()
+        sc = DummyConfigManager()
         ch = DummyCloudHandler()
         eid = uid()
         sc.create_infrastructure(eid)
@@ -63,7 +63,7 @@ class BaseTest(unittest.TestCase):
             repr(self.ib),
             '{0}:[{1}_False]'.format(eid, node['node_id']))
     def test_sc_drop_node(self):
-        sc = DummyServiceComposer()
+        sc = DummyConfigManager()
         ch = DummyCloudHandler()
         eid = uid()
         sc.create_infrastructure(eid)
@@ -74,7 +74,7 @@ class BaseTest(unittest.TestCase):
         sc.drop_node(node)
         self.assertEqual(repr(self.ib), '{0}:[]'.format(eid))
     def test_sc_drop_infrastructure(self):
-        sc = DummyServiceComposer()
+        sc = DummyConfigManager()
         ch = DummyCloudHandler()
         eid = uid()
         sc.create_infrastructure(eid)

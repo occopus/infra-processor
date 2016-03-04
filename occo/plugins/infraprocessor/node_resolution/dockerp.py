@@ -94,7 +94,7 @@ class DockerResolver(Resolver):
         Fill synch_attrs.
 
         .. todo:: Maybe this should be moved to the Compiler. The IP
-            depends on it, not the Chef service-composer.
+            depends on it, not the Chef config-manager.
 
         .. todo:: Furthermore, synch_attrs will be obsoleted, and moved to
             basic service_health_check as parameters.

@@ -52,9 +52,9 @@ class CloudBrokerResolver(Resolver):
 
             from occo.infobroker import main_info_broker
             sc_data = main_info_broker.get(
-                'service_composer.aux_data',
-                node_definition['service_composer_id'])
-            yield ('service_composer_default',
+                'config_manager.aux_data',
+                node_definition['config_manager_id'])
+            yield ('config_manager_default',
                    sc_data.get(temp_name, None))
 
             yield 'default', ''
@@ -118,7 +118,7 @@ class CloudBrokerResolver(Resolver):
         Fill synch_attrs.
 
         .. todo:: Maybe this should be moved to the Compiler. The IP
-            depends on it, not the Chef service-composer.
+            depends on it, not the Chef config-manager.
 
         .. todo:: Furthermore, synch_attrs will be obsoleted, and moved to
             basic service_health_check as parameters.
