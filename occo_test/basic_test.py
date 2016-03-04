@@ -31,7 +31,7 @@ class BaseTest(unittest.TestCase):
             UDS.instantiate(protocol='dict'),
             None,
             DummyCloudHandler(),
-            DummyServiceComposer(),
+            DummyConfigManager(),
         )
     def test_cmd_1(self):
         self.infrap = ip.InfraProcessor.instantiate('basic')

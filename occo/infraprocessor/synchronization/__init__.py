@@ -149,7 +149,7 @@ class NodeSynchStrategy(factory.MultiBackend):
 
     :param resolved_node_definition: The node definition as resolved by the
         InfraProcessor. It is the same as the input of the ResourceHandler and
-        ServiceComposer's CreateNode commands.
+        ConfigManager's CreateNode commands.
 
     :param instance_data: The instance data as provided by the InfraProcessor
         after successfully creating a node.

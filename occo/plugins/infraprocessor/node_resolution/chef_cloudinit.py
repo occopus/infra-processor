@@ -43,7 +43,7 @@ class ChefCloudinitResolver(Resolver):
     with Chef_.
 
     This resolver updates the node definition with infromation required by the
-    Chef :ref:`Service Composer <servicecomposer>` and any kind of :ref:`Cloud
+    Chef :ref:`Service Composer <configmanager>` and any kind of :ref:`Cloud
     Handler <resourcehandler>` that uses cloud-init; for example the
     :class:`~occo.resourcehandler.backend.ec2.EC2ResourceHandler`.
 
@@ -63,9 +63,9 @@ class ChefCloudinitResolver(Resolver):
 
             from occo.infobroker import main_info_broker
             sc_data = main_info_broker.get(
-                'service_composer.aux_data',
-                node_definition['service_composer_id'])
-            yield ('service_composer_default',
+                'config_manager.aux_data',
+                node_definition['config_manager_id'])
+            yield ('config_manager_default',
                    sc_data.get('context_template', None))
 
             yield 'default', ''
@@ -129,7 +129,7 @@ class ChefCloudinitResolver(Resolver):
         Fill synch_attrs.
 
         .. todo:: Maybe this should be moved to the Compiler. The IP
-            depends on it, not the Chef service-composer.
+            depends on it, not the Chef config-manager.
 
         .. todo:: Furthermore, synch_attrs will be obsoleted, and moved to
             basic service_health_check as parameters.
