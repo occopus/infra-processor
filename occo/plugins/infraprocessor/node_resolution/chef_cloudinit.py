@@ -64,7 +64,7 @@ class ChefCloudinitResolver(Resolver):
             from occo.infobroker import main_info_broker
             sc_data = main_info_broker.get(
                 'config_manager.aux_data',
-                node_definition['config_manager_id'])
+                node_definition['config_management']['type'])
             yield ('config_manager_default',
                    sc_data.get('context_template', None))
 
