@@ -54,27 +54,20 @@ def node_synch_type(resolved_node_definition):
     # Can be specified by the node definition (implementation).
     # A node definition based on legacy material can even define an ad-hoc
     # strategy for that sole node type:
-    synchstrat = resolved_node_definition.get('service_health_check')
+    synchstrat = resolved_node_definition.get('health_check')
     if synchstrat:
         # The synch strategy may be parameterizable (like 'basic' is)
-        key = synchstrat['protocol'] \
+        key = synchstrat.get('protocol','basic') \
             if isinstance(synchstrat, dict) \
             else synchstrat
-        src = 'node_definition.service_health_check'
         if not NodeSynchStrategy.has_backend(key):
             # If specified, but unknown, that is an error (typo or misconfig.)
-            raise ValueError('Unknown service_health_check', key)
+            raise ValueError('Unknown health_check', key)
     else:
         # No special synch strategy has been defined.
-        # Trying a generic synch strategy for the implementation type
-        key = resolved_node_definition.get('implementation_type'),
-        src = 'node_definition.implementation_type'
-        if not NodeSynchStrategy.has_backend(key):
-            # There is no generic synch strategy for the implementation type
-            # Using default synch strategy
-            key, src = 'basic', 'default'
+        key = 'basic'
 
-    log.debug('SynchStrategy protocol is %r (from %s)', key, src)
+    log.debug('SynchStrategy protocol is %r', key)
     return key
 
 def get_synch_strategy(instance_data):
@@ -218,9 +211,9 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         """
         if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
-                'service_health_check', dict())
+                'health_check', dict())
             if isinstance(self.kwargs, basestring):
-                # service_health_check has been specified as a non-parameterized
+                # health_check has been specified as a non-parameterized
                 # string.
                 self.kwargs = dict()
         return self.kwargs
@@ -237,7 +230,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
             ibget=ib.get,
             instance_data=self.instance_data,
             variables=self.node_description.get('variables'),
-            addr=self.get_node_address(),
+            ip=self.get_node_address(),
         )
         import jinja2
         tmp = jinja2.Template(fmt)

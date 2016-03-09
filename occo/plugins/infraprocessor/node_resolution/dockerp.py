@@ -97,7 +97,7 @@ class DockerResolver(Resolver):
             depends on it, not the Chef config-manager.
 
         .. todo:: Furthermore, synch_attrs will be obsoleted, and moved to
-            basic service_health_check as parameters.
+            basic health_check as parameters.
         """
         outedges = node_desc.get('mappings', dict()).get('outbound', dict())
 

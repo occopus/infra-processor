@@ -191,7 +191,7 @@ class SynchronizationProvider(ib.InfoProvider):
                     for i in j.itervalues())
         return dict(details=details, ready=ready)
 
-    @ib.provides('node.service_health_check.state')
+    @ib.provides('node.health_check.state')
     @util.wet_method(node_status.READY)
     def service_verification_state(self, instance_data):
         log.debug('Acquiring service health check state')
