@@ -22,7 +22,7 @@
 
 from __future__ import absolute_import
 
-__all__ = ['ChefCloudinitResolver']
+__all__ = ['CloudinitResolver']
 
 import logging
 import occo.util as util
@@ -33,24 +33,21 @@ import yaml
 import jinja2
 from occo.infraprocessor.node_resolution import Resolver
 
-log = logging.getLogger('occo.infraprocessor.node_resolution.chef')
-datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.chef')
+log = logging.getLogger('occo.infraprocessor.node_resolution.cloudinig')
+datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.cloudinit')
 
-@factory.register(Resolver, 'chef+cloudinit')
-class ChefCloudinitResolver(Resolver):
+@factory.register(Resolver, 'cloudinit')
+class CloudinitResolver(Resolver):
     """
-    Implementation of :class:`Resolver` for implementations for `cloud-init`_
-    with Chef_.
+    Implementation of :class:`Resolver` for implementations for `cloud-init`_ .
 
-    This resolver updates the node definition with infromation required by the
-    Chef :ref:`Service Composer <configmanager>` and any kind of :ref:`Cloud
-    Handler <resourcehandler>` that uses cloud-init; for example the
-    :class:`~occo.resourcehandler.backend.ec2.EC2ResourceHandler`.
+    This resolver updates the node definition with information required by
+    any kind of :ref:`Cloud Handler <resourcehandler>` that uses cloud-init; 
+    for example the :class:`~occo.resourcehandler.backend.ec2.EC2ResourceHandler`.
 
     .. todo:: This aspect of OCCO (resolving) must be thought over.
 
     .. _`cloud-init`: https://cloudinit.readthedocs.org/en/latest/
-    .. _Chef: https://www.chef.io/
     """
 
     def extract_template(self, node_definition):
@@ -58,8 +55,9 @@ class ChefCloudinitResolver(Resolver):
         def context_list():
             # `context_template` is also removed from the definition, as
             # it will be replaced with the rendered `context`
+            context_section = node_definition.get('contextualisation', None)
             yield ('node_definition',
-                   node_definition.pop('context_template', None))
+                   context_section.pop('context_template', None))
 
             from occo.infobroker import main_info_broker
             sc_data = main_info_broker.get(

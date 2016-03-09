@@ -104,13 +104,15 @@ def wait_for_node(instance_data,
     if timeout:
         start_time = time.time()
         finish_time = start_time + timeout
-        log.info(('Waiting for node %r to become ready with '
+        log.info(('Waiting for node %r:%r to become ready with '
                   '%d seconds timeout. Deadline: %s'),
+                 instance_data['name'],
                  node_id,
                  timeout,
                  datetime.datetime.fromtimestamp(finish_time).isoformat())
     else:
-        log.info('Waiting for node %r to become ready. No timeout.', node_id)
+        log.info('Waiting for node %r:%r to become ready. No timeout.', 
+            instance_data.get('resolved_node_definition',dict()).get('name'), node_id)
 
     status = ib.get('node.state', instance_data)
     while status != node_status.READY:
