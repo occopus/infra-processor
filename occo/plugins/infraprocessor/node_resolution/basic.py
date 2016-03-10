@@ -11,33 +11,29 @@
 ### WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ### See the License for the specific language governing permissions and
 ### limitations under the License.
-""" Docker resolver for node definitions.
+""" Basic resolver for node definitions.
 
-.. moduleauthor:: Sandor Acs <acs.sandor@sztaki.mta.hu>
+.. moduleauthor:: Jozsef Kovacs <jozsef.kovacs@sztaki.mta.hu>
 
 """
 
 from __future__ import absolute_import
 
-__all__ = ['DockerResolver']
+__all__ = ['BasicResolver']
 
 import logging
 import occo.util as util
 import occo.exceptions as exceptions
 import occo.util.factory as factory
 import sys
-import yaml
-import jinja2
 from occo.infraprocessor.node_resolution import Resolver
 
-log = logging.getLogger('occo.infraprocessor.node_resolution.docker')
+log = logging.getLogger('occo.infraprocessor.node_resolution.basic')
 
-@factory.register(Resolver, 'docker')
-class DockerResolver(Resolver):
+@factory.register(Resolver, 'basic')
+class BasicResolver(Resolver):
     """
-    Implementation of :class:`Resolver` for implementations for `docker`_..
-
-    .. _`docker`: https://www.docker.com
+    Implementation of :class:`Resolver` for performing basic resolution.
     """
 
     def attr_template_resolve(self, attrs, template_data):
