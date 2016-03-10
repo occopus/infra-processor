@@ -57,7 +57,7 @@ def resolve_node(ib, node_id, node_description, default_timeout=None):
         strategy=node_description.get('backend_selection_strategy', 'random'))
 
     resolver = Resolver.instantiate(
-        protocol=node_definition['contextualisation']['type'],
+        protocol=node_definition.get('contextualisation',dict()).get('type','basic'),
         info_broker=ib,
         node_id=node_id,
         node_description=node_description,
