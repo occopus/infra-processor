@@ -33,7 +33,7 @@ import yaml
 import jinja2
 from occo.infraprocessor.node_resolution import Resolver
 
-log = logging.getLogger('occo.infraprocessor.node_resolution.cloudinig')
+log = logging.getLogger('occo.infraprocessor.node_resolution.cloudinit')
 datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.cloudinit')
 
 @factory.register(Resolver, 'cloudinit')
@@ -173,6 +173,18 @@ class CloudinitResolver(Resolver):
         source_data.update(node_definition)
         source_data['ibget'] = main_info_broker.get
         source_data['find_node_id'] = find_node_id
+
+        state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
+        node_first_instances = dict()
+        for node in state:
+            node_name = node['node_description']['name']
+            if node_name  not in node_first_instances:
+                node_first_instances[node_name] = node
+                #source_data['{0!s}_ip'.format(node_name)]=main_info_broker.get('node.resource.address', node)
+                source_data[node_name]={}
+                # if not source_data[node_name] else source_data[node_name]
+                source_data[node_name]['ip']=main_info_broker.get('node.resource.address', node)
+
         return source_data
 
     def check_if_cloud_config(self, node_definition):
