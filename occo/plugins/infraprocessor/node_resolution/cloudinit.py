@@ -175,15 +175,9 @@ class CloudinitResolver(Resolver):
         source_data['find_node_id'] = find_node_id
 
         state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
-        node_first_instances = dict()
         for node in state:
-            node_name = node['node_description']['name']
-            if node_name  not in node_first_instances:
-                node_first_instances[node_name] = node
-                #source_data['{0!s}_ip'.format(node_name)]=main_info_broker.get('node.resource.address', node)
-                source_data[node_name]={}
-                # if not source_data[node_name] else source_data[node_name]
-                source_data[node_name]['ip']=main_info_broker.get('node.resource.address', node)
+            source_data[node['node_description']['name']] = \
+            dict(ip=main_info_broker.get('node.resource.address', node))
 
         return source_data
 
