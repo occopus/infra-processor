@@ -67,15 +67,17 @@ def node_synch_type(resolved_node_definition):
         # No special synch strategy has been defined.
         key = 'basic'
 
-    log.debug('SynchStrategy protocol is %r', key)
+    log.debug('Health checking protocol is %r', key)
     return key
 
 def get_synch_strategy(instance_data):
     node_description = instance_data['node_description']
     resolved_node_definition = instance_data['resolved_node_definition']
     synch_type = node_synch_type(resolved_node_definition)
-    log.info('Synchronization strategy for node %r is %r.',
-             instance_data['node_id'], synch_type)
+    log.debug('Health checking strategy for node %r:%r is %r.',
+             node_description['name'], instance_data['node_id'], synch_type)
+    log.info('Health checking for node %r:%r starts:',
+             node_description['name'], instance_data['node_id'])
 
     return NodeSynchStrategy.instantiate(
         synch_type, node_description,
@@ -100,19 +102,20 @@ def wait_for_node(instance_data,
     """
 
     node_id = instance_data['node_id']
+    node_name = instance_data.get('resolved_node_definition',dict()).get('name',"undefined")
 
     if timeout:
         start_time = time.time()
         finish_time = start_time + timeout
         log.info(('Waiting for node %r:%r to become ready with '
                   '%d seconds timeout. Deadline: %s'),
-                 instance_data['name'],
+                 node_name,
                  node_id,
                  timeout,
                  datetime.datetime.fromtimestamp(finish_time).isoformat())
     else:
         log.info('Waiting for node %r:%r to become ready. No timeout.', 
-            instance_data.get('resolved_node_definition',dict()).get('name'), node_id)
+            node_name, node_id)
 
     status = ib.get('node.state', instance_data)
     while status != node_status.READY:
@@ -126,14 +129,14 @@ def wait_for_node(instance_data,
         if status in [node_status.SHUTDOWN, node_status.FAIL]:
             raise NodeFailedError(instance_data, status)
 
-        log.debug('Node %r is not ready, waiting %r seconds.',
-                  node_id, poll_delay)
+        log.debug('Node %r:%r is not ready, waiting %r seconds.',
+                  node_name, node_id, poll_delay)
         if not sleep(poll_delay, cancel_event):
-            log.debug('Waiting for node %r has been cancelled.', node_id)
+            log.debug('Waiting for node %r:%r has been cancelled.', node_name, node_id)
             return
         status = ib.get('node.state', instance_data)
 
-    log.info('Node %r is ready.', node_id)
+    log.info('Node %r:%r is ready.', node_name, node_id)
 
 class NodeSynchStrategy(factory.MultiBackend):
     """
