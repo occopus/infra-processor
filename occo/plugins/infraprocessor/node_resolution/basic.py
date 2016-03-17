@@ -128,6 +128,10 @@ class BasicResolver(Resolver):
                     nodes[0]['node_id'])
             return nodes[0]
 
+        def getip(node_name):
+            return main_info_broker.get('node.resource.address',
+                   find_node_id(node_name))
+
         # As long as source_data is read-only, the following code is fine.
         # As it is used only for rendering a template, it is yet read-only.
         # If, for any reason, something starts modifying it, dict.update()-s
@@ -138,11 +142,12 @@ class BasicResolver(Resolver):
         source_data.update(node_definition)
         source_data['ibget'] = main_info_broker.get
         source_data['find_node_id'] = find_node_id
+        source_data['getip'] = getip
 
-        state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
-        for node in state:
-            source_data[node['node_description']['name']] = \
-            dict(ip=main_info_broker.get('node.resource.address', node))
+        #state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
+        #for node in state:
+        #    source_data[node['node_description']['name']] = \
+        #    dict(ip=main_info_broker.get('node.resource.address', node))
 
         return source_data
 
