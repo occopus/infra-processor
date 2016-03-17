@@ -26,6 +26,8 @@ import occo.util as util
 import occo.exceptions as exceptions
 import occo.util.factory as factory
 import sys
+import yaml
+import jinja2
 from occo.infraprocessor.node_resolution import Resolver
 
 log = logging.getLogger('occo.infraprocessor.node_resolution.basic')
@@ -76,7 +78,7 @@ class BasicResolver(Resolver):
         - Resolve string attributes as Jinja templates
         - Construct an attribute to connect nodes
         """
-        attrs = node_definition.get('attributes', dict())
+        attrs = node_definition.get('contextualisation',dict()).get('attributes', dict())
         attrs.update(node_desc.get('attributes', dict()))
         attr_mapping = node_desc.get('mappings', dict()).get('inbound', dict())
 
@@ -136,6 +138,12 @@ class BasicResolver(Resolver):
         source_data.update(node_definition)
         source_data['ibget'] = main_info_broker.get
         source_data['find_node_id'] = find_node_id
+
+        state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
+        for node in state:
+            source_data[node['node_description']['name']] = \
+            dict(ip=main_info_broker.get('node.resource.address', node))
+
         return source_data
 
     def _resolve_node(self, node_definition):

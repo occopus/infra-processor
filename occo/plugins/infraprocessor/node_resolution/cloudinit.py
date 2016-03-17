@@ -113,7 +113,7 @@ class CloudinitResolver(Resolver):
         - Resolve string attributes as Jinja templates
         - Construct an attribute to connect nodes
         """
-        attrs = node_definition.get('config_management',dict()).get('attributes', dict())
+        attrs = node_definition.get('contextualisation',dict()).get('attributes', dict())
         attrs.update(node_desc.get('attributes', dict()))
         attr_mapping = node_desc.get('mappings', dict()).get('inbound', dict())
 
