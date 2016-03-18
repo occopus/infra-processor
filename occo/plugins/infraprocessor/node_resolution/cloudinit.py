@@ -59,13 +59,6 @@ class CloudinitResolver(Resolver):
             yield ('node_definition',
                    context_section.pop('context_template', None))
 
-            from occo.infobroker import main_info_broker
-            sc_data = main_info_broker.get(
-                'config_manager.aux_data',
-                node_definition['config_management']['type'])
-            yield ('config_manager_default',
-                   sc_data.get('context_template', None))
-
             yield 'default', ''
 
         src, template = util.find_effective_setting(context_list())
