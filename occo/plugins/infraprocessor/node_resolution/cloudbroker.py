@@ -147,6 +147,10 @@ class CloudBrokerResolver(Resolver):
                     nodes[0]['node_id'])
             return nodes[0]
 
+        def getip(node_name):
+            return main_info_broker.get('node.resource.address',
+                   find_node_id(node_name))
+
         # As long as source_data is read-only, the following code is fine.
         # As it is used only for rendering a template, it is yet read-only.
         # If, for any reason, something starts modifying it, dict.update()-s
@@ -157,6 +161,8 @@ class CloudBrokerResolver(Resolver):
         source_data.update(node_definition)
         source_data['ibget'] = main_info_broker.get
         source_data['find_node_id'] = find_node_id
+        source_data['getip'] = getip
+
         return source_data
 
     def render_template(self, temp_name, node_definition, template_data):
@@ -167,9 +173,9 @@ class CloudBrokerResolver(Resolver):
 
     def render_template_files(self, node_definition, template_data):
         """Renders the template files"""
-        if 'template_files' not in node_definition:
+        if 'template_files' not in node_definition.get('contextualisation',dict()):
             return []
-        temp_files = node_definition['template_files']
+        temp_files = node_definition['contextualisation']['template_files']
         for tfile in temp_files:
             tfile['content'] = self.render_template('content_template', tfile, template_data)
         return temp_files
@@ -197,6 +203,6 @@ class CloudBrokerResolver(Resolver):
                                                        template_data),
             'synch_attrs'    : self.extract_synch_attrs(node_desc),
         }
-        if 'files' in node_desc:
-            data['files'] = node_desc['files']
+        if 'files' in node_definition.get('contextualisation',dict()):
+            data['files'] = node_definition['contextualisation']['files']
         node_definition.update(data)
