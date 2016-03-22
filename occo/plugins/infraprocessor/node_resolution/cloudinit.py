@@ -31,7 +31,7 @@ import occo.util.factory as factory
 import sys
 import yaml
 import jinja2
-from occo.infraprocessor.node_resolution import Resolver
+from occo.infraprocessor.node_resolution import Resolver, ContextSchemaChecker
 from occo.exceptions import SchemaError
 
 PROTOCOL_ID = 'cloudinit'
