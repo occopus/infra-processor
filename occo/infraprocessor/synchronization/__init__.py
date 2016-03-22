@@ -76,7 +76,7 @@ def get_synch_strategy(instance_data):
     synch_type = node_synch_type(resolved_node_definition)
     log.debug('Health checking strategy for node %r:%r is %r.',
              node_description['name'], instance_data['node_id'], synch_type)
-    log.info('Health checking for node %r:%r starts:',
+    log.info('Health checking for node %r:%r',
              node_description['name'], instance_data['node_id'])
 
     return NodeSynchStrategy.instantiate(

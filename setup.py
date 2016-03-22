@@ -38,7 +38,7 @@ setuptools.setup(
         'occo.plugins.infraprocessor.basic_infraprocessor',
         'occo.plugins.infraprocessor.node_resolution.chef_cloudinit',
         'occo.plugins.infraprocessor.node_resolution.cloudbroker',
-        'occo.plugins.infraprocessor.node_resolution.dockerp',
+        'occo.plugins.infraprocessor.node_resolution.docker',
     ],
     scripts=[],
     url='https://github.com/occopus',
