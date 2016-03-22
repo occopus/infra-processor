@@ -29,12 +29,15 @@ import occo.util.factory as factory
 import sys
 import yaml
 import jinja2
-from occo.infraprocessor.node_resolution import Resolver
+from occo.infraprocessor.node_resolution import Resolver, ContextSchemaChecker
+from occo.exceptions import SchemaError
+
+PROTOCOL_ID = 'cloudbroker'
 
 log = logging.getLogger('occo.infraprocessor.node_resolution.cloudbroker')
 datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.cloudbroker')
 
-@factory.register(Resolver, 'cloudbroker')
+@factory.register(Resolver, PROTOCOL_ID)
 class CloudBrokerResolver(Resolver):
     """
     Implementation of :class:`Resolver` for implementations for `cloudbroker`_..
@@ -206,3 +209,21 @@ class CloudBrokerResolver(Resolver):
         if 'files' in node_definition.get('contextualisation',dict()):
             data['files'] = node_definition['contextualisation']['files']
         node_definition.update(data)
+
+@factory.register(ContextSchemaChecker, PROTOCOL_ID)
+class CloudbrokerSchemaChecker(ContextSchemaChecker):
+    def __init__(self):
+#        super(__init__(), self)
+        self.req_keys = ["type"]
+        self.opt_keys = []
+    def perform_check(self, data):
+        missing_keys = ContextSchemaChecker.get_missing_keys(self, data, self.req_keys)
+        if missing_keys:
+            msg = "missing required keys: " + ', '.join(str(key) for key in missing_keys)
+            raise SchemaError(msg)
+        valid_keys = self.req_keys + self.opt_keys
+        invalid_keys = ContextSchemaChecker.get_invalid_keys(self, data, valid_keys)
+        if invalid_keys:
+            msg = "invalid keys found: " + ', '.join(str(key) for key in invalid_keys)
+            raise SchemaError(msg)
+        return True
