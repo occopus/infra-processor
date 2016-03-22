@@ -213,9 +213,8 @@ class CloudBrokerResolver(Resolver):
 @factory.register(ContextSchemaChecker, PROTOCOL_ID)
 class CloudbrokerSchemaChecker(ContextSchemaChecker):
     def __init__(self):
-#        super(__init__(), self)
         self.req_keys = ["type"]
-        self.opt_keys = []
+        self.opt_keys = ["template_files","files"]
     def perform_check(self, data):
         missing_keys = ContextSchemaChecker.get_missing_keys(self, data, self.req_keys)
         if missing_keys:

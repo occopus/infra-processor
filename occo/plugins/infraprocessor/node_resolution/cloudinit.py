@@ -252,18 +252,17 @@ class CloudinitResolver(Resolver):
 @factory.register(ContextSchemaChecker, PROTOCOL_ID)
 class CloudinitSchemaChecker(ContextSchemaChecker):
     def __init__(self):
-#        super(__init__(), self)
-        self.req_keys = ["type"]
-        self.opt_keys = []
+        self.req_keys = ["type","context_template"]
+        self.opt_keys = ["attributes"]
     def perform_check(self, data):
         missing_keys = ContextSchemaChecker.get_missing_keys(self, data, self.req_keys)
         if missing_keys:
-            msg = "missing required keys: " + ', '.join(str(key) for key in missing_keys)
+            msg = "Missing key(s): " + ', '.join(str(key) for key in missing_keys)
             raise SchemaError(msg)
         valid_keys = self.req_keys + self.opt_keys
         invalid_keys = ContextSchemaChecker.get_invalid_keys(self, data, valid_keys)
         if invalid_keys:
-            msg = "invalid keys found: " + ', '.join(str(key) for key in invalid_keys)
+            msg = "Unknown key(s): " + ', '.join(str(key) for key in invalid_keys)
             raise SchemaError(msg)
         return True
 
