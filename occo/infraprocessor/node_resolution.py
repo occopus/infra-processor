@@ -141,3 +141,25 @@ class IdentityResolver(Resolver):
         node_definition['node_id'] = self.node_id
         node_definition['infra_id'] = desc['infra_id']
         node_definition['user_id'] = desc['user_id']
+
+class ContextSchemaChecker(factory.MultiBackend):
+    def __init__(self):
+        return
+
+    def perform_check(self, data):
+        raise NotImplementedError()
+
+    def get_missing_keys(self, data, req_keys):
+        missing_keys = list()
+        for rkey in req_keys:
+            if rkey not in data:
+                missing_keys.append(rkey)
+        return missing_keys
+
+    def get_invalid_keys(self, data, valid_keys):
+        invalid_keys = list()
+        for key in data:
+            if key not in valid_keys:
+                invalid_keys.append(key)
+        return invalid_keys
+
