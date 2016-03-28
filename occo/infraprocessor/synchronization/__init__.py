@@ -32,9 +32,12 @@ from occo.exceptions.orchestration import *
 import occo.util.factory as factory
 import occo.constants.status as node_status
 import occo.infobroker
+from occo.exceptions import SchemaError
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 ib = occo.infobroker.main_info_broker
+
+PROTOCOL_ID = 'basic'
 
 import time, datetime
 def sleep(timeout, cancel_event):
@@ -186,7 +189,7 @@ class NodeSynchStrategy(factory.MultiBackend):
 from occo.infraprocessor.synchronization.primitives import *
 basic_status = StatusTag('Generic status information')
 
-@factory.register(NodeSynchStrategy, 'basic')
+@factory.register(NodeSynchStrategy, PROTOCOL_ID)
 class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     """
     Default synchronization strategy. This strategy ensures the following
@@ -320,5 +323,59 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
                 return False
             else:
                 log.info('Mysql database \'%r\' has become available.', name)
+        return True
+
+
+class HCSchemaChecker(factory.MultiBackend):
+    def __init__(self):
+        return
+
+    def perform_check(self, data):
+        raise NotImplementedError()
+
+    def get_missing_keys(self, data, req_keys):
+        missing_keys = list()
+        for rkey in req_keys:
+            if rkey not in data:
+                missing_keys.append(rkey)
+        return missing_keys
+
+    def get_invalid_keys(self, data, valid_keys):
+        invalid_keys = list()
+        for key in data:
+            if key not in valid_keys:
+                invalid_keys.append(key)
+        return invalid_keys
+
+@factory.register(HCSchemaChecker, PROTOCOL_ID)
+class BasicHCSchemaChecker(HCSchemaChecker):
+    def __init__(self):
+#        super(__init__(), self)
+        self.req_keys = []
+        self.opt_keys = ['type', 'mysqldbs', 'ports', 'urls', 'ping']
+    def perform_check(self, data):
+        missing_keys = HCSchemaChecker.get_missing_keys(self, data, self.req_keys)
+        if missing_keys:
+            msg = "missing required keys: " + ', '.join(str(key) for key in missing_keys)
+            raise SchemaError(msg)
+        valid_keys = self.req_keys + self.opt_keys
+        invalid_keys = HCSchemaChecker.get_invalid_keys(self, data, valid_keys)
+        if invalid_keys:
+            msg = "invalid keys found: " + ', '.join(str(key) for key in invalid_keys)
+            raise SchemaError(msg)
+        if data['mysqldbs']:
+            if type(data['mysqldbs']) is list:
+                keys = ['name', 'user', 'pass']
+                for db in data['mysqldbs']:
+                    mkeys = HCSchemaChecker.get_missing_keys(self, db, keys)
+                    ikeys = HCSchemaChecker.get_invalid_keys(self, db, keys)
+                if mkeys:
+                    msg = "missing keys in mysqldbs: " +  ', '.join(str(key) for key in mkeys)
+                    raise SchemaError(msg)
+                if ikeys:
+                    msg = "invalid keys in mysqldbs: " +  ', '.join(str(key) for key in mkeys)
+                    raise SchemaError(msg)
+            else:
+                raise SchemaError("invalid format of mysqldbs")
         return True
 
