@@ -145,9 +145,11 @@ class CloudBrokerResolver(Resolver):
                     'No node exists with the given name', node_name)
             elif len(nodes) > 1:
                 log.warning(
-                    'There are multiple nodes with the same node name. '
-                    'Choosing the first one as default (%s)',
-                    nodes[0]['node_id'])
+                    'There are multiple nodes with the same node name (%s). ' +
+                    'Multiple nodes are ' +
+                    ', '.join(item['node_id'] for item in nodes) +
+                    '. Choosing the first one as default (%s).',
+                    node_name, nodes[0]['node_id'])
             return nodes[0]
 
         def getip(node_name):
