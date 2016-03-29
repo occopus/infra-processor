@@ -363,7 +363,7 @@ class BasicHCSchemaChecker(HCSchemaChecker):
         if invalid_keys:
             msg = "invalid keys found: " + ', '.join(str(key) for key in invalid_keys)
             raise SchemaError(msg)
-        if data['mysqldbs']:
+        if 'mysqldbs' in data:
             if type(data['mysqldbs']) is list:
                 keys = ['name', 'user', 'pass']
                 for db in data['mysqldbs']:
