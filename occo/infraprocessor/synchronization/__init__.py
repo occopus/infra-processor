@@ -356,12 +356,12 @@ class BasicHCSchemaChecker(HCSchemaChecker):
     def perform_check(self, data):
         missing_keys = HCSchemaChecker.get_missing_keys(self, data, self.req_keys)
         if missing_keys:
-            msg = "missing required keys: " + ', '.join(str(key) for key in missing_keys)
+            msg = "Missing key(s): " + ', '.join(str(key) for key in missing_keys)
             raise SchemaError(msg)
         valid_keys = self.req_keys + self.opt_keys
         invalid_keys = HCSchemaChecker.get_invalid_keys(self, data, valid_keys)
         if invalid_keys:
-            msg = "invalid keys found: " + ', '.join(str(key) for key in invalid_keys)
+            msg = "Unknown key(s): " + ', '.join(str(key) for key in invalid_keys)
             raise SchemaError(msg)
         if 'mysqldbs' in data:
             if type(data['mysqldbs']) is list:
@@ -370,12 +370,12 @@ class BasicHCSchemaChecker(HCSchemaChecker):
                     mkeys = HCSchemaChecker.get_missing_keys(self, db, keys)
                     ikeys = HCSchemaChecker.get_invalid_keys(self, db, keys)
                 if mkeys:
-                    msg = "missing keys in mysqldbs: " +  ', '.join(str(key) for key in mkeys)
+                    msg = "Missing key(s) in mysqldbs: " +  ', '.join(str(key) for key in mkeys)
                     raise SchemaError(msg)
                 if ikeys:
-                    msg = "invalid keys in mysqldbs: " +  ', '.join(str(key) for key in mkeys)
+                    msg = "Unknown key(s) in mysqldbs: " +  ', '.join(str(key) for key in mkeys)
                     raise SchemaError(msg)
             else:
-                raise SchemaError("invalid format of mysqldbs")
+                raise SchemaError("Invalid format of \'mysqldbs\' section! Must be a list.")
         return True
 
