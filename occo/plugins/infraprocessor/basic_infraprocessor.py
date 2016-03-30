@@ -114,7 +114,7 @@ class CreateNode(Command):
             node_description=node_description,
         )
 
-        log.info('Creating node %r', instance_data['node_id'])
+        log.info('Creating node %r/%r', node_description['name'], instance_data['node_id'])
 
         try:
             self._perform_create(infraprocessor, instance_data)
