@@ -84,7 +84,7 @@ class CompositeStatus(object):
         # all() is lazy; if force-evaluation is omitted, evaluation will stop
         # at the first False
         status = all(results)
-        log.info('Status of %r: %s', tag.name, format_bool(status))
+        log.info('Health check result: %s', format_bool(status))
         return status
 
     def get_detailed_status(self, tag, *args, **kwargs):
@@ -155,7 +155,7 @@ class SynchronizationProvider(ib.InfoProvider):
     def mysql_ready(self, host, dbname, dbuser, dbpass):
         import MySQLdb
         try:
-            log.debug('Checking mysqldb name: %s, user: %s, pass: %s',dbname,dbuser,dbpass)
+            log.debug('Checking mysqldb connectivity with name: %s, user: %s, pass: %s',dbname,dbuser,dbpass)
             conn = MySQLdb.connect(host, dbuser, dbpass, dbname)
             conn.close()
             log.debug('Connection successful')
