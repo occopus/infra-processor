@@ -393,7 +393,6 @@ class BasicHCSchemaChecker(HCSchemaChecker):
                  raise SchemaError("Invalid value of \'ping\' section! Must be True/False.")
         if 'timeout' in data:
             if not isinstance(data['timeout'], int):
-                 raise SchemaError("Invalid value of \'timeout\' section! Must
-                         be integer.")
+                 raise SchemaError("Invalid value of \'timeout\' section! Must be integer.")
         return True
 
