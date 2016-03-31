@@ -352,7 +352,7 @@ class BasicHCSchemaChecker(HCSchemaChecker):
     def __init__(self):
 #        super(__init__(), self)
         self.req_keys = []
-        self.opt_keys = ['type', 'mysqldbs', 'ports', 'urls', 'ping']
+        self.opt_keys = ['type', 'mysqldbs', 'ports', 'urls', 'ping', 'timeout']
     def perform_check(self, data):
         missing_keys = HCSchemaChecker.get_missing_keys(self, data, self.req_keys)
         if missing_keys:
@@ -377,5 +377,23 @@ class BasicHCSchemaChecker(HCSchemaChecker):
                     raise SchemaError(msg)
             else:
                 raise SchemaError("Invalid format of \'mysqldbs\' section! Must be a list.")
+        if 'urls' in data:
+            if type(data['urls']) is not list:
+                raise SchemaError("Invalid format of \'urls\' section! Must be a list.")
+        if 'ports' in data:
+            if type(data['ports']) is list:
+                for port in data['ports']:
+                    if not isinstance(port, int):
+                        msg = "Invalid port %r - must be integer" % (port)
+                        raise SchemaError(msg)
+            else:
+                raise SchemaError("Invalid format of \'ports\' section! Must be a list.")
+        if 'ping' in data:
+            if not isinstance(data['ping'], bool):
+                 raise SchemaError("Invalid value of \'ping\' section! Must be True/False.")
+        if 'timeout' in data:
+            if not isinstance(data['timeout'], int):
+                 raise SchemaError("Invalid value of \'timeout\' section! Must
+                         be integer.")
         return True
 
