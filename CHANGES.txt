@@ -1,4 +1,27 @@
 
+v1.0 - April 2016
+- Rename cloudhandler to resourcehandler
+- Rename servicecomposer to configmanager
+- Add 'filter' key to node descr to filter implementations
+- New format fo health_check
+- Introduce 'contextualisation' section in node defs
+- Rename chef+cloudinit to cloudinit
+- Make contextualisation optional
+- Introduce 'config_management' section in node defs
+- Introduce 'health_check' section in node defs
+- Ip resolution is done by getip() function
+- Update all resolvers to apply new node def format
+- Add SchemaChecking for resolver plugins
+- Add SchemaChecking for health_check section
+
+v0.3.0 - January 2016
+- integrate mysql synch_strategy into basic strategy
+- rename sunch_strategy to service_health_check
+- mysql synch now checks list of databases
+- node status check includes: service health checking
+- new service health check: port checking
+- add mysql-python as dependency
+
 v0.2.0 - November 2015
 - Execute instructions by cloud handler initiated by from enactor
 - Implement instruction set
@@ -9,11 +32,4 @@ v0.2.0 - November 2015
 - Error handling and rollback
 - Add CloudBroker node resolver
 
-v0.3.0 - January 2016
-- integrate mysql synch_strategy into basic strategy
-- rename sunch_strategy to service_health_check
-- mysql synch now checks list of databases
-- node status check includes: service health checking
-- new service health check: port checking
-- add mysql-python as dependency
 
