@@ -32,9 +32,12 @@ from occo.exceptions.orchestration import *
 import occo.util.factory as factory
 import occo.constants.status as node_status
 import occo.infobroker
+from occo.exceptions import SchemaError
 
 log = logging.getLogger('occo.infraprocessor.synchronization')
 ib = occo.infobroker.main_info_broker
+
+PROTOCOL_ID = 'basic'
 
 import time, datetime
 def sleep(timeout, cancel_event):
@@ -54,35 +57,30 @@ def node_synch_type(resolved_node_definition):
     # Can be specified by the node definition (implementation).
     # A node definition based on legacy material can even define an ad-hoc
     # strategy for that sole node type:
-    synchstrat = resolved_node_definition.get('service_health_check')
+    synchstrat = resolved_node_definition.get('health_check')
     if synchstrat:
         # The synch strategy may be parameterizable (like 'basic' is)
-        key = synchstrat['protocol'] \
+        key = synchstrat.get('protocol','basic') \
             if isinstance(synchstrat, dict) \
             else synchstrat
-        src = 'node_definition.service_health_check'
         if not NodeSynchStrategy.has_backend(key):
             # If specified, but unknown, that is an error (typo or misconfig.)
-            raise ValueError('Unknown service_health_check', key)
+            raise ValueError('Unknown health_check', key)
     else:
         # No special synch strategy has been defined.
-        # Trying a generic synch strategy for the implementation type
-        key = resolved_node_definition.get('implementation_type'),
-        src = 'node_definition.implementation_type'
-        if not NodeSynchStrategy.has_backend(key):
-            # There is no generic synch strategy for the implementation type
-            # Using default synch strategy
-            key, src = 'basic', 'default'
+        key = 'basic'
 
-    log.debug('SynchStrategy protocol is %r (from %s)', key, src)
+    log.debug('Health checking protocol is %r', key)
     return key
 
 def get_synch_strategy(instance_data):
     node_description = instance_data['node_description']
     resolved_node_definition = instance_data['resolved_node_definition']
     synch_type = node_synch_type(resolved_node_definition)
-    log.info('Synchronization strategy for node %r is %r.',
-             instance_data['node_id'], synch_type)
+    log.debug('Health checking strategy for node %r:%r is %r.',
+             node_description['name'], instance_data['node_id'], synch_type)
+    log.info('Health checking for node %r:%r',
+             node_description['name'], instance_data['node_id'])
 
     return NodeSynchStrategy.instantiate(
         synch_type, node_description,
@@ -107,17 +105,20 @@ def wait_for_node(instance_data,
     """
 
     node_id = instance_data['node_id']
+    node_name = instance_data.get('resolved_node_definition',dict()).get('name',"undefined")
 
     if timeout:
         start_time = time.time()
         finish_time = start_time + timeout
-        log.info(('Waiting for node %r to become ready with '
+        log.info(('Waiting for node %r:%r to become ready with '
                   '%d seconds timeout. Deadline: %s'),
+                 node_name,
                  node_id,
                  timeout,
                  datetime.datetime.fromtimestamp(finish_time).isoformat())
     else:
-        log.info('Waiting for node %r to become ready. No timeout.', node_id)
+        log.info('Waiting for node %r:%r to become ready. No timeout.', 
+            node_name, node_id)
 
     status = ib.get('node.state', instance_data)
     while status != node_status.READY:
@@ -131,14 +132,14 @@ def wait_for_node(instance_data,
         if status in [node_status.SHUTDOWN, node_status.FAIL]:
             raise NodeFailedError(instance_data, status)
 
-        log.debug('Node %r is not ready, waiting %r seconds.',
-                  node_id, poll_delay)
+        log.debug('Node %r:%r is not ready, waiting %r seconds.',
+                  node_name, node_id, poll_delay)
         if not sleep(poll_delay, cancel_event):
-            log.debug('Waiting for node %r has been cancelled.', node_id)
+            log.debug('Waiting for node %r:%r has been cancelled.', node_name, node_id)
             return
         status = ib.get('node.state', instance_data)
 
-    log.info('Node %r is ready.', node_id)
+    log.info('Node %r:%r is ready.', node_name, node_id)
 
 class NodeSynchStrategy(factory.MultiBackend):
     """
@@ -148,8 +149,8 @@ class NodeSynchStrategy(factory.MultiBackend):
         It is the same as the input of the InfraProcessor's CreateNode command.
 
     :param resolved_node_definition: The node definition as resolved by the
-        InfraProcessor. It is the same as the input of the CloudHandler and
-        ServiceComposer's CreateNode commands.
+        InfraProcessor. It is the same as the input of the ResourceHandler and
+        ConfigManager's CreateNode commands.
 
     :param instance_data: The instance data as provided by the InfraProcessor
         after successfully creating a node.
@@ -188,7 +189,7 @@ class NodeSynchStrategy(factory.MultiBackend):
 from occo.infraprocessor.synchronization.primitives import *
 basic_status = StatusTag('Generic status information')
 
-@factory.register(NodeSynchStrategy, 'basic')
+@factory.register(NodeSynchStrategy, PROTOCOL_ID)
 class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     """
     Default synchronization strategy. This strategy ensures the following
@@ -218,9 +219,9 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         """
         if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
-                'service_health_check', dict())
+                'health_check', dict())
             if isinstance(self.kwargs, basestring):
-                # service_health_check has been specified as a non-parameterized
+                # health_check has been specified as a non-parameterized
                 # string.
                 self.kwargs = dict()
         return self.kwargs
@@ -237,7 +238,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
             ibget=ib.get,
             instance_data=self.instance_data,
             variables=self.node_description.get('variables'),
-            addr=self.get_node_address(),
+            ip=self.get_node_address(),
         )
         import jinja2
         tmp = jinja2.Template(fmt)
@@ -322,5 +323,76 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
                 return False
             else:
                 log.info('Mysql database \'%r\' has become available.', name)
+        return True
+
+
+class HCSchemaChecker(factory.MultiBackend):
+    def __init__(self):
+        return
+
+    def perform_check(self, data):
+        raise NotImplementedError()
+
+    def get_missing_keys(self, data, req_keys):
+        missing_keys = list()
+        for rkey in req_keys:
+            if rkey not in data:
+                missing_keys.append(rkey)
+        return missing_keys
+
+    def get_invalid_keys(self, data, valid_keys):
+        invalid_keys = list()
+        for key in data:
+            if key not in valid_keys:
+                invalid_keys.append(key)
+        return invalid_keys
+
+@factory.register(HCSchemaChecker, PROTOCOL_ID)
+class BasicHCSchemaChecker(HCSchemaChecker):
+    def __init__(self):
+#        super(__init__(), self)
+        self.req_keys = []
+        self.opt_keys = ['type', 'mysqldbs', 'ports', 'urls', 'ping', 'timeout']
+    def perform_check(self, data):
+        missing_keys = HCSchemaChecker.get_missing_keys(self, data, self.req_keys)
+        if missing_keys:
+            msg = "Missing key(s): " + ', '.join(str(key) for key in missing_keys)
+            raise SchemaError(msg)
+        valid_keys = self.req_keys + self.opt_keys
+        invalid_keys = HCSchemaChecker.get_invalid_keys(self, data, valid_keys)
+        if invalid_keys:
+            msg = "Unknown key(s): " + ', '.join(str(key) for key in invalid_keys)
+            raise SchemaError(msg)
+        if 'mysqldbs' in data:
+            if type(data['mysqldbs']) is list:
+                keys = ['name', 'user', 'pass']
+                for db in data['mysqldbs']:
+                    mkeys = HCSchemaChecker.get_missing_keys(self, db, keys)
+                    ikeys = HCSchemaChecker.get_invalid_keys(self, db, keys)
+                if mkeys:
+                    msg = "Missing key(s) in mysqldbs: " +  ', '.join(str(key) for key in mkeys)
+                    raise SchemaError(msg)
+                if ikeys:
+                    msg = "Unknown key(s) in mysqldbs: " +  ', '.join(str(key) for key in mkeys)
+                    raise SchemaError(msg)
+            else:
+                raise SchemaError("Invalid format of \'mysqldbs\' section! Must be a list.")
+        if 'urls' in data:
+            if type(data['urls']) is not list:
+                raise SchemaError("Invalid format of \'urls\' section! Must be a list.")
+        if 'ports' in data:
+            if type(data['ports']) is list:
+                for port in data['ports']:
+                    if not isinstance(port, int):
+                        msg = "Invalid port %r - must be integer" % (port)
+                        raise SchemaError(msg)
+            else:
+                raise SchemaError("Invalid format of \'ports\' section! Must be a list.")
+        if 'ping' in data:
+            if not isinstance(data['ping'], bool):
+                 raise SchemaError("Invalid value of \'ping\' section! Must be True/False.")
+        if 'timeout' in data:
+            if not isinstance(data['timeout'], int):
+                 raise SchemaError("Invalid value of \'timeout\' section! Must be integer.")
         return True
 

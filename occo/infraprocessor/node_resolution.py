@@ -23,7 +23,7 @@ necessary to actually create and build such a node on a given backend.
 
 The correct resolution algorithm **depends on** the type of description, which
 is a function of the type of the **service composer** and the type of the
-**cloud handler** used to instantiate the node. Because of this dependency,
+**resource handler** used to instantiate the node. Because of this dependency,
 the resolution utilises the :mod:`Factory <occo.util.factory>` pattern to
 select the correct :class:`Resolver`.
 """
@@ -51,13 +51,11 @@ def resolve_node(ib, node_id, node_description, default_timeout=None):
     node_definition = ib.get(
         'node.definition',
         node_description['type'],
-        preselected_backend_ids=(
-            node_description.get('backend_id')
-            or node_description.get('backend_ids')),
+        filter_keywords = node_description.get('resource_filter'),
         strategy=node_description.get('backend_selection_strategy', 'random'))
 
     resolver = Resolver.instantiate(
-        node_definition['implementation_type'],
+        protocol=node_definition.get('contextualisation',dict()).get('type','basic'),
         info_broker=ib,
         node_id=node_id,
         node_description=node_description,
@@ -117,7 +115,7 @@ class Resolver(factory.MultiBackend):
         in-place with the necessary information. ``node_definition`` is also
         returned for convenience. The resulting :ref:`resolved node definition
         <resolvednode>` must contain all information intended for both the
-        service composer and the cloud handler.
+        service composer and the resource handler.
 
         :param node_definition: The definition that needs to be resolved.
             The definition will be updated in place.
@@ -143,3 +141,25 @@ class IdentityResolver(Resolver):
         node_definition['node_id'] = self.node_id
         node_definition['infra_id'] = desc['infra_id']
         node_definition['user_id'] = desc['user_id']
+
+class ContextSchemaChecker(factory.MultiBackend):
+    def __init__(self):
+        return
+
+    def perform_check(self, data):
+        raise NotImplementedError()
+
+    def get_missing_keys(self, data, req_keys):
+        missing_keys = list()
+        for rkey in req_keys:
+            if rkey not in data:
+                missing_keys.append(rkey)
+        return missing_keys
+
+    def get_invalid_keys(self, data, valid_keys):
+        invalid_keys = list()
+        for key in data:
+            if key not in valid_keys:
+                invalid_keys.append(key)
+        return invalid_keys
+

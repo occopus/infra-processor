@@ -12,15 +12,17 @@
 ### See the License for the specific language governing permissions and
 ### limitations under the License.
 
-""" Cloudbroker resolver for node definitions.
+""" Chef resolver for node definitions.
 
-.. moduleauthor:: Zoltan Farkas <zoltan.farkas@sztaki.mta.hu>
+.. _`connect`: https://gitlab.lpds.sztaki.hu/cloud-orchestrator/connect-cookbook
+
+.. moduleauthor:: Adam Visegradi <adam.visegradi@sztaki.mta.hu>
 
 """
 
 from __future__ import absolute_import
 
-__all__ = ['CloudBrokerResolver']
+__all__ = ['CloudinitResolver']
 
 import logging
 import occo.util as util
@@ -32,26 +34,33 @@ import jinja2
 from occo.infraprocessor.node_resolution import Resolver, ContextSchemaChecker
 from occo.exceptions import SchemaError
 
-PROTOCOL_ID = 'cloudbroker'
+PROTOCOL_ID = 'cloudinit'
 
-log = logging.getLogger('occo.infraprocessor.node_resolution.cloudbroker')
-datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.cloudbroker')
+log = logging.getLogger('occo.infraprocessor.node_resolution.cloudinit')
+datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.cloudinit')
 
 @factory.register(Resolver, PROTOCOL_ID)
-class CloudBrokerResolver(Resolver):
+class CloudinitResolver(Resolver):
     """
-    Implementation of :class:`Resolver` for implementations for `cloudbroker`_..
+    Implementation of :class:`Resolver` for implementations for `cloud-init`_ .
 
-    .. _`cloudbroker`: http://cloudbroker.com
+    This resolver updates the node definition with information required by
+    any kind of :ref:`Cloud Handler <resourcehandler>` that uses cloud-init; 
+    for example the :class:`~occo.resourcehandler.backend.ec2.EC2ResourceHandler`.
+
+    .. todo:: This aspect of OCCO (resolving) must be thought over.
+
+    .. _`cloud-init`: https://cloudinit.readthedocs.org/en/latest/
     """
 
-    def extract_template(self, temp_name, node_definition):
+    def extract_template(self, node_definition):
 
         def context_list():
             # `context_template` is also removed from the definition, as
             # it will be replaced with the rendered `context`
+            context_section = node_definition.get('contextualisation', None)
             yield ('node_definition',
-                   node_definition.pop(temp_name, None))
+                   context_section.pop('context_template', None))
 
             yield 'default', ''
 
@@ -100,7 +109,7 @@ class CloudBrokerResolver(Resolver):
         - Resolve string attributes as Jinja templates
         - Construct an attribute to connect nodes
         """
-        attrs = node_definition.get('attributes', dict())
+        attrs = node_definition.get('contextualisation',dict()).get('attributes', dict())
         attrs.update(node_desc.get('attributes', dict()))
         attr_mapping = node_desc.get('mappings', dict()).get('inbound', dict())
 
@@ -168,22 +177,51 @@ class CloudBrokerResolver(Resolver):
         source_data['find_node_id'] = find_node_id
         source_data['getip'] = getip
 
+        #state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
+        #for node in state:
+        #    source_data[node['node_description']['name']] = \
+        #    dict(ip=main_info_broker.get('node.resource.address', node))
+
         return source_data
 
-    def render_template(self, temp_name, node_definition, template_data):
-        """Renders the template pertaining to the node definition"""
-        template = self.extract_template(temp_name, node_definition)
-        datalog.debug('About to render template:\n%s', template)
-        return template.render(**template_data)
+    def check_if_cloud_config(self, node_definition):
+        """
+        Process context iff it's a cloud-config.
+        """
+        # TODO: Maybe this condition can be imporoved? Need to verify.
+        if not node_definition['context'].startswith('#cloud-config'):
+            return
 
-    def render_template_files(self, node_definition, template_data):
-        """Renders the template files"""
-        if 'template_files' not in node_definition.get('contextualisation',dict()):
-            return []
-        temp_files = node_definition['contextualisation']['template_files']
-        for tfile in temp_files:
-            tfile['content'] = self.render_template('content_template', tfile, template_data)
-        return temp_files
+        # Verify that the context *is* parsable by YAML. Otherwise, cloud-init
+        # will fail silently.
+        try:
+            yaml.load(node_definition['context'])
+        except yaml.YAMLError as e:
+            if hasattr(e, 'problem_mark'):
+                msg=('Schema error in context of '
+                     'node definition at line {0}.').format(e.problem_mark.line)
+            else:
+                msg='Schema error in context of node definition.'
+
+            raise \
+                exceptions.NodeContextSchemaError(
+                    node_definition=node_definition, reason=e, msg=msg), \
+                None, sys.exc_info()[2]
+
+    def check_template(self, node_definition):
+        """
+        Checks the context part of node definition.
+
+        :raises occo.exceptions.orchestration.NodeContextSchemaError: if the
+            contextualization is invalid.
+        """
+        self.check_if_cloud_config(node_definition)
+        # Checks for other types of contextualization can be listed here
+
+    def render_template(self, node_definition, template_data):
+        """Renders the template pertaining to the node definition"""
+        template = self.extract_template(node_definition)
+        return template.render(**template_data)
 
     def _resolve_node(self, node_definition):
         """
@@ -198,25 +236,26 @@ class CloudBrokerResolver(Resolver):
 
         # Amend resolved node with new information
         data = {
-            'node_id'        : node_id,
-            'name'           : node_desc['name'],
-            'infra_id'       : node_desc['infra_id'],
-            'template_files' : self.render_template_files(node_definition,
-                                                          template_data),
-            'attributes'     : self.resolve_attributes(node_desc,
-                                                       node_definition,
-                                                       template_data),
-            'synch_attrs'    : self.extract_synch_attrs(node_desc),
+            'node_id'     : node_id,
+            'name'        : node_desc['name'],
+            'infra_id'    : node_desc['infra_id'],
+            'context'     : self.render_template(node_definition,
+                                                 template_data),
+            'attributes'  : self.resolve_attributes(node_desc,
+                                                    node_definition,
+                                                    template_data),
+            'synch_attrs' : self.extract_synch_attrs(node_desc),
         }
-        if 'files' in node_definition.get('contextualisation',dict()):
-            data['files'] = node_definition['contextualisation']['files']
         node_definition.update(data)
 
+        # Check context
+        self.check_template(node_definition)
+
 @factory.register(ContextSchemaChecker, PROTOCOL_ID)
-class CloudbrokerSchemaChecker(ContextSchemaChecker):
+class CloudinitSchemaChecker(ContextSchemaChecker):
     def __init__(self):
-        self.req_keys = ["type"]
-        self.opt_keys = ["template_files","files"]
+        self.req_keys = ["type","context_template"]
+        self.opt_keys = ["attributes"]
     def perform_check(self, data):
         missing_keys = ContextSchemaChecker.get_missing_keys(self, data, self.req_keys)
         if missing_keys:
@@ -228,3 +267,4 @@ class CloudbrokerSchemaChecker(ContextSchemaChecker):
             msg = "Unknown key(s): " + ', '.join(str(key) for key in invalid_keys)
             raise SchemaError(msg)
         return True
+

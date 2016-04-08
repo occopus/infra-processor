@@ -38,7 +38,7 @@ datalog = logging.getLogger('occo.data.infraprocessor.basic')
 class CreateInfrastructure(Command):
     """
     Implementation of infrastructure creation using a
-    :ref:`service composer <servicecomposer>`.
+    :ref:`service composer <configmanager>`.
 
     :param str infra_id: The identifier of the infrastructure instance.
 
@@ -53,7 +53,7 @@ class CreateInfrastructure(Command):
     def perform(self, infraprocessor):
         try:
             log.debug('Creating infrastructure %r', self.infra_id)
-            result = infraprocessor.servicecomposer.create_infrastructure(
+            result = infraprocessor.configmanager.create_infrastructure(
                 self.infra_id)
             ib.main_eventlog.infrastructure_created(self.infra_id)
         except KeyboardInterrupt:
@@ -89,8 +89,8 @@ class CreateInfrastructure(Command):
 class CreateNode(Command):
     """
     Implementation of node creation using a
-    :ref:`service composer <servicecomposer>` and a
-    :ref:`cloud handler <cloudhandler>`.
+    :ref:`service composer <configmanager>` and a
+    :ref:`resource handler <resourcehandler>`.
 
     :param node: The description of the node to be created.
     :type node: :ref:`nodedescription`
@@ -114,7 +114,7 @@ class CreateNode(Command):
             node_description=node_description,
         )
 
-        log.info('Creating node %r', instance_data['node_id'])
+        log.info('Creating node %r/%r', node_description['name'], instance_data['node_id'])
 
         try:
             self._perform_create(infraprocessor, instance_data)
@@ -165,11 +165,11 @@ class CreateNode(Command):
         datalog.debug("Resolved node description:\n%s",
                       yaml.dump(resolved_node_def, default_flow_style=False))
         instance_data['resolved_node_definition'] = resolved_node_def
-        instance_data['backend_id'] = resolved_node_def['backend_id']
+        instance_data['resource'] = resolved_node_def['resource']
 
         # Create the node based on the resolved information
-        infraprocessor.servicecomposer.register_node(resolved_node_def)
-        instance_id = infraprocessor.cloudhandler.create_node(resolved_node_def)
+        infraprocessor.configmanager.register_node(resolved_node_def)
+        instance_id = infraprocessor.resourcehandler.create_node(resolved_node_def)
         instance_data['instance_id'] = instance_id
 
         import occo.infraprocessor.synchronization as synch
@@ -221,8 +221,8 @@ class CreateNode(Command):
 class DropNode(Command):
     """
     Implementation of node deletion using a
-    :ref:`service composer <servicecomposer>` and a
-    :ref:`cloud handler <cloudhandler>`.
+    :ref:`service composer <configmanager>` and a
+    :ref:`resource handler <resourcehandler>`.
 
     :param instance_data: The description of the node instance to be deleted.
     :type instance_data: :ref:`instancedata`
@@ -235,8 +235,8 @@ class DropNode(Command):
     def perform(self, infraprocessor):
         try:
             log.debug('Dropping node %r', self.instance_data['node_id'])
-            infraprocessor.cloudhandler.drop_node(self.instance_data)
-            infraprocessor.servicecomposer.drop_node(self.instance_data)
+            infraprocessor.resourcehandler.drop_node(self.instance_data)
+            infraprocessor.configmanager.drop_node(self.instance_data)
             infraprocessor.uds.remove_nodes(self.instance_data['infra_id'],
                                             self.instance_data['node_id'])
             ib.main_eventlog.node_deleted(self.instance_data)
@@ -259,7 +259,7 @@ class DropNode(Command):
 class DropInfrastructure(Command):
     """
     Implementation of infrastructure deletion using a
-    :ref:`service composer <servicecomposer>`.
+    :ref:`service composer <configmanager>`.
 
     :param str infra_id: The identifier of the infrastructure instance.
     """
@@ -270,7 +270,7 @@ class DropInfrastructure(Command):
     def perform(self, infraprocessor):
         try:
             log.debug('Dropping infrastructure %r', self.infra_id)
-            infraprocessor.servicecomposer.drop_infrastructure(self.infra_id)
+            infraprocessor.configmanager.drop_infrastructure(self.infra_id)
             ib.main_eventlog.infrastructure_deleted(self.infra_id)
         except KeyboardInterrupt:
             # A KeyboardInterrupt is considered intentional cancellation
@@ -293,12 +293,12 @@ class BasicInfraProcessor(InfraProcessor):
     :param user_data_store: Database manipulation.
     :type user_data_store: :class:`~occo.infobroker.UDS`
 
-    :param cloudhandler: Cloud access.
-    :type cloudhandler: :class:`~occo.cloudhandler.cloudhandler.CloudHandler`
+    :param resourcehandler: Resource access.
+    :type resourcehandler: :class:`~occo.resourcehandler.resourcehandler.ResourceHandler`
 
-    :param servicecomposer: Service composer access.
-    :type servicecomposer:
-        :class:`~occo.servicecomposer.servicecomposer.ServiceComposer`
+    :param configmanager: Service composer access.
+    :type configmanager:
+        :class:`~occo.configmanager.configmanager.ConfigManager`
 
     :param process_strategy: Plug-in strategy for performing an independent
         batch of instructions.
@@ -316,8 +316,8 @@ class BasicInfraProcessor(InfraProcessor):
             process_strategy=process_strategy)
         self.ib = ib.main_info_broker
         self.uds = ib.main_uds
-        self.cloudhandler = ib.main_cloudhandler
-        self.servicecomposer = ib.main_servicecomposer
+        self.resourcehandler = ib.main_resourcehandler
+        self.configmanager = ib.main_configmanager
         self.poll_delay = poll_delay
 
     def cri_create_infrastructure(self, infra_id):

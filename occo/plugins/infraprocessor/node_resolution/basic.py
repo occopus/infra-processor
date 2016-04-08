@@ -11,15 +11,15 @@
 ### WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ### See the License for the specific language governing permissions and
 ### limitations under the License.
-""" Docker resolver for node definitions.
+""" Basic resolver for node definitions.
 
-.. moduleauthor:: Sandor Acs <acs.sandor@sztaki.mta.hu>
+.. moduleauthor:: Jozsef Kovacs <jozsef.kovacs@sztaki.mta.hu>
 
 """
 
 from __future__ import absolute_import
 
-__all__ = ['DockerResolver']
+__all__ = ['BasicResolver']
 
 import logging
 import occo.util as util
@@ -28,16 +28,17 @@ import occo.util.factory as factory
 import sys
 import yaml
 import jinja2
-from occo.infraprocessor.node_resolution import Resolver
+from occo.infraprocessor.node_resolution import Resolver, ContextSchemaChecker
+from occo.exceptions import SchemaError
 
-log = logging.getLogger('occo.infraprocessor.node_resolution.docker')
+PROTOCOL_ID = 'basic'
 
-@factory.register(Resolver, 'docker')
-class DockerResolver(Resolver):
+log = logging.getLogger('occo.infraprocessor.node_resolution.basic')
+
+@factory.register(Resolver, PROTOCOL_ID)
+class BasicResolver(Resolver):
     """
-    Implementation of :class:`Resolver` for implementations for `docker`_..
-
-    .. _`docker`: https://www.docker.com
+    Implementation of :class:`Resolver` for performing basic resolution.
     """
 
     def attr_template_resolve(self, attrs, template_data):
@@ -80,7 +81,7 @@ class DockerResolver(Resolver):
         - Resolve string attributes as Jinja templates
         - Construct an attribute to connect nodes
         """
-        attrs = node_definition.get('attributes', dict())
+        attrs = node_definition.get('contextualisation',dict()).get('attributes', dict())
         attrs.update(node_desc.get('attributes', dict()))
         attr_mapping = node_desc.get('mappings', dict()).get('inbound', dict())
 
@@ -94,10 +95,10 @@ class DockerResolver(Resolver):
         Fill synch_attrs.
 
         .. todo:: Maybe this should be moved to the Compiler. The IP
-            depends on it, not the Chef service-composer.
+            depends on it, not the Chef config-manager.
 
         .. todo:: Furthermore, synch_attrs will be obsoleted, and moved to
-            basic service_health_check as parameters.
+            basic health_check as parameters.
         """
         outedges = node_desc.get('mappings', dict()).get('outbound', dict())
 
@@ -125,10 +126,16 @@ class DockerResolver(Resolver):
                     'No node exists with the given name', node_name)
             elif len(nodes) > 1:
                 log.warning(
-                    'There are multiple nodes with the same node name. '
-                    'Choosing the first one as default (%s)',
-                    nodes[0]['node_id'])
+                    'There are multiple nodes with the same node name (%s). ' +
+                    'Multiple nodes are ' +
+                    ', '.join(item['node_id'] for item in nodes) +
+                    '. Choosing the first one as default (%s).',
+                    node_name, nodes[0]['node_id'])
             return nodes[0]
+
+        def getip(node_name):
+            return main_info_broker.get('node.resource.address',
+                   find_node_id(node_name))
 
         # As long as source_data is read-only, the following code is fine.
         # As it is used only for rendering a template, it is yet read-only.
@@ -140,6 +147,13 @@ class DockerResolver(Resolver):
         source_data.update(node_definition)
         source_data['ibget'] = main_info_broker.get
         source_data['find_node_id'] = find_node_id
+        source_data['getip'] = getip
+
+        #state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
+        #for node in state:
+        #    source_data[node['node_description']['name']] = \
+        #    dict(ip=main_info_broker.get('node.resource.address', node))
+
         return source_data
 
     def _resolve_node(self, node_definition):
@@ -164,3 +178,21 @@ class DockerResolver(Resolver):
             'synch_attrs' : self.extract_synch_attrs(node_desc),
         }
         node_definition.update(data)
+
+@factory.register(ContextSchemaChecker, PROTOCOL_ID)
+class BasicContextSchemaChecker(ContextSchemaChecker):
+    def __init__(self):
+        self.req_keys = ["type","attributes"]
+        self.opt_keys = []
+    def perform_check(self, data):
+        missing_keys = ContextSchemaChecker.get_missing_keys(self, data, self.req_keys)
+        if missing_keys:
+            msg = "Missing key(s): " + ', '.join(str(key) for key in missing_keys)
+            raise SchemaError(msg)
+        valid_keys = self.req_keys + self.opt_keys
+        invalid_keys = ContextSchemaChecker.get_invalid_keys(self, data, valid_keys)
+        if invalid_keys:
+            msg = "Unknown key(s): " + ', '.join(str(key) for key in invalid_keys)
+            raise SchemaError(msg)
+        return True
+

@@ -43,7 +43,7 @@ DUMMY_REPORT = dict(
 )
 
 def format_bool(b):
-    return 'READY' if b else 'PENDING'
+    return node_status.READY if b else node_status.PENDING
 
 class StatusItem(object):
     def __init__(self, description, fun):
@@ -84,7 +84,7 @@ class CompositeStatus(object):
         # all() is lazy; if force-evaluation is omitted, evaluation will stop
         # at the first False
         status = all(results)
-        log.info('Status of %r: %s', tag.name, format_bool(status))
+        log.info('Health check result: %s', format_bool(status))
         return status
 
     def get_detailed_status(self, tag, *args, **kwargs):
@@ -155,7 +155,7 @@ class SynchronizationProvider(ib.InfoProvider):
     def mysql_ready(self, host, dbname, dbuser, dbpass):
         import MySQLdb
         try:
-            log.debug('Checking mysqldb name: %s, user: %s, pass: %s',dbname,dbuser,dbpass)
+            log.debug('Checking mysqldb connectivity with name: %s, user: %s, pass: %s',dbname,dbuser,dbpass)
             conn = MySQLdb.connect(host, dbuser, dbpass, dbname)
             conn.close()
             log.debug('Connection successful')
@@ -191,8 +191,8 @@ class SynchronizationProvider(ib.InfoProvider):
                     for i in j.itervalues())
         return dict(details=details, ready=ready)
 
-    @ib.provides('node.service_health_check.state')
-    @util.wet_method('READY')
+    @ib.provides('node.health_check.state')
+    @util.wet_method(node_status.READY)
     def service_verification_state(self, instance_data):
         log.debug('Acquiring service health check state')
         from ..synchronization import get_synch_strategy

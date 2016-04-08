@@ -31,7 +31,7 @@ class LocalTest(unittest.TestCase):
             UDS.instantiate(protocol='dict'),
             el.EventLog.instantiate(protocol='logging'),
             DummyCloudHandler(),
-            DummyServiceComposer(),
+            DummyConfigManager(),
         )
         self.ib = ib.real_main_info_broker
     def test_create_infrastructure(self):

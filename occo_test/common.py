@@ -33,16 +33,16 @@ import yaml
 dummydata = yaml.load(
     """
     backends.auth_data : {}
-    service_composer.aux_data : {}
+    config_manager.aux_data : {}
     node.resource.address: null
     node.resource.ip_address: null
     node.state: ready
     nodedefs:
         dummynode: &DN
             implementation_type: chef+cloudinit
-            service_composer_id: null
+            config_manager_id: null
             backend_id: null
-            service_health_check:
+            health_check:
                 protocol: basic
                 ping: false
             attributes:
@@ -52,10 +52,10 @@ dummydata = yaml.load(
                   - attr4
         synch1:
             <<: *DN
-            service_health_check: basic
+            health_check: basic
         synch_bad:
             <<: *DN
-            service_health_check: nonexistent
+            health_check: nonexistent
     """)
 
 class DummyNode(dict):
@@ -111,7 +111,7 @@ class DummyInfoBroker(ib.InfoRouter):
                             for (k, v) in self.environments.iteritems())
         return ' '.join(envlist_repr)
 
-class DummyServiceComposer(object):
+class DummyConfigManager(object):
     def __init__(self):
         self.ib = ib.main_info_broker
     def register_node(self, node):
