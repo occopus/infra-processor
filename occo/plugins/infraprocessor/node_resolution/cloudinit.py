@@ -142,7 +142,7 @@ class CloudinitResolver(Resolver):
         """
         from occo.infobroker import main_info_broker
 
-        def find_node_id(node_name):
+        def find_node_id(node_name, allnodes=False):
             """
             Convenience function to be used in templates, to acquire a node id
             based on node name.
@@ -152,19 +152,22 @@ class CloudinitResolver(Resolver):
             if not nodes:
                 raise KeyError(
                     'No node exists with the given name', node_name)
-            elif len(nodes) > 1:
+            elif not allnodes and len(nodes) > 1:
                 log.warning(
                     'There are multiple nodes with the same node name (%s). ' +
                     'Multiple nodes are ' +
                     ', '.join(item['node_id'] for item in nodes) +
                     '. Choosing the first one as default (%s).',
                     node_name, nodes[0]['node_id'])
-            return nodes[0]
+            return nodes[0] if not allnodes else nodes
 
         def getip(node_name):
             return main_info_broker.get('node.resource.address',
-                   find_node_id(node_name))
+                   find_node_id(node_name, allnodes=False))
 
+        def getipall(node_name):
+            return [ main_info_broker.get('node.resource.address', node)
+                     for node in find_node_id(node_name, allnodes=True) ]
         # As long as source_data is read-only, the following code is fine.
         # As it is used only for rendering a template, it is yet read-only.
         # If, for any reason, something starts modifying it, dict.update()-s
@@ -176,6 +179,7 @@ class CloudinitResolver(Resolver):
         source_data['ibget'] = main_info_broker.get
         source_data['find_node_id'] = find_node_id
         source_data['getip'] = getip
+        source_data['getipall'] = getipall
 
         #state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
         #for node in state:
