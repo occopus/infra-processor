@@ -65,6 +65,10 @@ class CloudinitResolver(Resolver):
             yield 'default', ''
 
         src, template = util.find_effective_setting(context_list())
+
+        if isinstance(template, dict):
+              template="#cloud-config\n"+yaml.dump(template)
+
         datalog.debug('Context template from %s:\n%s', src, template)
 
         return jinja2.Template(template)
