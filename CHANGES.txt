@@ -1,3 +1,6 @@
+v1.2 - August 2016
+- No changes
+
 v1.1 - June 2016
 - Add getipall() method to resolver
 - Fix yaml_import issue
