@@ -111,6 +111,7 @@ class CreateNode(Command):
             node_id=str(uuid.uuid4()),
             infra_id=node_description['infra_id'],
             user_id=node_description['user_id'],
+            infra_name=node_description['infra_name'],
             node_description=node_description,
         )
 

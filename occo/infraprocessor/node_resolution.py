@@ -140,6 +140,7 @@ class IdentityResolver(Resolver):
         desc = self.node_description
         node_definition['node_id'] = self.node_id
         node_definition['infra_id'] = desc['infra_id']
+        node_definition['infra_name'] = desc['infra_name']
         node_definition['user_id'] = desc['user_id']
 
 class ContextSchemaChecker(factory.MultiBackend):
