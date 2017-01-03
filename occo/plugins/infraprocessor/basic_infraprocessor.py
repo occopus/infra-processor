@@ -163,6 +163,7 @@ class CreateNode(Command):
             ib, node_id, node_description,
             getattr(infraprocessor, 'default_timeout', None)
         )
+        resolved_node_def['infra_name']=node_description['infra_name']
         datalog.debug("Resolved node description:\n%s",
                       yaml.dump(resolved_node_def, default_flow_style=False))
         instance_data['resolved_node_definition'] = resolved_node_def
