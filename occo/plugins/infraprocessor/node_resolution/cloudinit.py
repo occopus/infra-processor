@@ -33,6 +33,7 @@ import yaml
 import jinja2
 from occo.infraprocessor.node_resolution import Resolver, ContextSchemaChecker
 from occo.exceptions import SchemaError
+import occo.infobroker as ib
 
 PROTOCOL_ID = 'cloudinit'
 
@@ -231,6 +232,13 @@ class CloudinitResolver(Resolver):
         template = self.extract_template(node_definition)
         return template.render(**template_data)
 
+    def resolve_config_management_section(self, node_definition, template_data):
+        #datalog.info("ConfigManagerSection before resolution: \"%r\"\n",node_definition.get('config_management'))
+        template = jinja2.Template(yaml.dump(node_definition.get('config_management')))
+        ret = yaml.load(template.render(**template_data))
+        #datalog.info("ConfigManagerSection after resolution: \"%r\"\n",ret)
+        return ret
+
     def _resolve_node(self, node_definition):
         """
         Implementation of :meth:`Resolver.resolve_node`.
@@ -238,9 +246,18 @@ class CloudinitResolver(Resolver):
 
         # Shorthands
         node_desc = self.node_description
-        ib = self.info_broker
+        #ib = self.info_broker
         node_id = self.node_id
         template_data = self.assemble_template_data(node_desc, node_definition)
+
+        # Resolve Config Manager section in node_definition if exists:
+        if "config_management" in node_definition:
+          resolved_cms = self.resolve_config_management_section(node_definition, template_data)
+          # Update node definition with resolved config management section
+          node_definition['config_management'].update(resolved_cms)
+          # Query attributes from CM to be used during resolution
+          cm_attributes = ib.main_configmanager.resolve_attributes(node_definition)
+          template_data.update(cm_attributes)
 
         # Amend resolved node with new information
         data = {
