@@ -1,3 +1,9 @@
+
+v1.3 - January 2017
+- Add support for config management attribute resolution
+- Make infra_name key visible for plugins
+- Fix filtering
+
 v1.2 - August 2016
 - No changes
 

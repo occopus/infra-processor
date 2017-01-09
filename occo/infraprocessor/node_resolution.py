@@ -51,7 +51,7 @@ def resolve_node(ib, node_id, node_description, default_timeout=None):
     node_definition = ib.get(
         'node.definition',
         node_description['type'],
-        filter_keywords = node_description.get('resource_filter'),
+        filter_keywords = node_description.get('filter'),
         strategy=node_description.get('backend_selection_strategy', 'random'))
 
     resolver = Resolver.instantiate(
@@ -140,6 +140,7 @@ class IdentityResolver(Resolver):
         desc = self.node_description
         node_definition['node_id'] = self.node_id
         node_definition['infra_id'] = desc['infra_id']
+        node_definition['infra_name'] = desc['infra_name']
         node_definition['user_id'] = desc['user_id']
 
 class ContextSchemaChecker(factory.MultiBackend):
