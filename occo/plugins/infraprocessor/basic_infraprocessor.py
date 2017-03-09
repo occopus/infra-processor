@@ -236,7 +236,7 @@ class DropNode(Command):
 
     def perform(self, infraprocessor):
         try:
-            log.debug('Dropping node %r', self.instance_data['node_id'])
+            log.info('Dropping node %r (%r)', self.instance_data['node_description']['name'], self.instance_data['node_id'])
             infraprocessor.resourcehandler.drop_node(self.instance_data)
             infraprocessor.configmanager.drop_node(self.instance_data)
             infraprocessor.uds.remove_nodes(self.instance_data['infra_id'],
