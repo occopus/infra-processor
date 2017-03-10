@@ -29,7 +29,7 @@ import occo.util as util
 import occo.exceptions as exceptions
 import occo.util.factory as factory
 import sys
-import yaml
+from ruamel import yaml
 import jinja2
 from occo.infraprocessor.node_resolution import Resolver, ContextSchemaChecker
 from occo.exceptions import SchemaError
@@ -68,7 +68,7 @@ class CloudinitResolver(Resolver):
         src, template = util.find_effective_setting(context_list())
 
         if isinstance(template, dict):
-              template="#cloud-config\n"+yaml.dump(template)
+              template="#cloud-config\n"+yaml.dump(template,default_flow_style=False)
 
         datalog.debug('Context template from %s:\n%s', src, template)
 
@@ -204,7 +204,7 @@ class CloudinitResolver(Resolver):
         # Verify that the context *is* parsable by YAML. Otherwise, cloud-init
         # will fail silently.
         try:
-            yaml.load(node_definition['context'])
+            yaml.load(node_definition['context'],Loader=yaml.Loader)
         except yaml.YAMLError as e:
             if hasattr(e, 'problem_mark'):
                 msg=('Schema error in context of '
@@ -235,7 +235,7 @@ class CloudinitResolver(Resolver):
     def resolve_config_management_section(self, node_definition, template_data):
         #datalog.info("ConfigManagerSection before resolution: \"%r\"\n",node_definition.get('config_management'))
         template = jinja2.Template(yaml.dump(node_definition.get('config_management')))
-        ret = yaml.load(template.render(**template_data))
+        ret = yaml.load(template.render(**template_data),Loader=yaml.Loader)
         #datalog.info("ConfigManagerSection after resolution: \"%r\"\n",ret)
         return ret
 

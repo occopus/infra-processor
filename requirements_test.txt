@@ -13,10 +13,11 @@ nose-cov==1.6
 pika==0.9.14
 python-dateutil==2.2
 pytz==2014.9
-PyYAML==3.11
 six==1.8.0
 redis==2.10.3
 requests==2.4.3
+ruamel.yaml==0.13.14
+ruamel.ordereddict==0.4.9
 wsgiref==0.1.2
 
 -e ../util

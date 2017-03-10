@@ -20,7 +20,7 @@
 
 __all__ = ['Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy']
 
-import yaml
+from ruamel import yaml
 import logging
 import os, signal
 import sys, traceback
@@ -252,7 +252,7 @@ class ParallelProcessesStrategy(Strategy):
         del self.processes[procid]
 
         if error:
-            error['value'] = yaml.load(error['value'])
+            error['value'] = yaml.load(error['value'], Loader=yaml.Loader)
             log.debug('Exception occured in sub-process:\n%s\n%r',
                       error['tbstr'], clean(error['value']))
             raise error['type'], error['value']
