@@ -31,6 +31,7 @@ from ruamel import yaml
 from occo.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
 from occo.exceptions.orchestration import *
+import traceback
 
 log = logging.getLogger('occo.infraprocessor.basic')
 datalog = logging.getLogger('occo.data.infraprocessor.basic')
@@ -249,8 +250,9 @@ class DropNode(Command):
             # This is a pre-cooked exception, no need for transformation
             raise
         except Exception as ex:
-            log.exception('Error while dropping node %r:',
+            log.error('Error while dropping node %r:',
                           self.instance_data['node_id'])
+            log.debug(traceback.format_exc())
             raise \
                 MinorInfraProcessorError(
                     self.instance_data['infra_id'],
@@ -281,8 +283,9 @@ class DropInfrastructure(Command):
             # This is a pre-cooked exception, no need for transformation
             raise
         except Exception as ex:
-            log.exception('Error while dropping infrastructure %r:',
+            log.error('Error while dropping infrastructure %r:',
                           self.infra_id)
+            log.debug(traceback.format_exc())
             raise MinorInfraProcessorError(self.infra_id, ex), \
                 None, sys.exc_info()[2]
 
