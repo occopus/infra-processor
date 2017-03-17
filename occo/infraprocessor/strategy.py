@@ -255,6 +255,8 @@ class ParallelProcessesStrategy(Strategy):
             error['value'] = yaml.load(error['value'], Loader=yaml.Loader)
             log.debug('Exception occured in sub-process:\n%s\n%r',
                       error['tbstr'], clean(error['value']))
+            log.debug('Re-raising the following exception: %s with content: %s',
+                      error['type'],error['value'])
             raise error['type'], error['value']
         else:
             self.results[procid] = result
