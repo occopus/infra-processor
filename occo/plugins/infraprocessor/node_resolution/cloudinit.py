@@ -166,6 +166,9 @@ class CloudinitResolver(Resolver):
                     node_name, nodes[0]['node_id'])
             return nodes[0] if not allnodes else nodes
 
+        def cut(inputstr, start, end):
+            return inputstr[start:end]
+
         def getip(node_name):
             return main_info_broker.get('node.resource.address',
                    find_node_id(node_name, allnodes=False))
@@ -185,11 +188,7 @@ class CloudinitResolver(Resolver):
         source_data['find_node_id'] = find_node_id
         source_data['getip'] = getip
         source_data['getipall'] = getipall
-
-        #state = main_info_broker.get('node.find', infra_id=node_desc['infra_id'])
-        #for node in state:
-        #    source_data[node['node_description']['name']] = \
-        #    dict(ip=main_info_broker.get('node.resource.address', node))
+        source_data['cut'] = cut
 
         return source_data
 
@@ -232,6 +231,13 @@ class CloudinitResolver(Resolver):
         template = self.extract_template(node_definition)
         return template.render(**template_data)
 
+    def resolve_resource_section(self, node_definition, template_data):
+        #datalog.info("ConfigManagerSection before resolution: \"%r\"\n",node_definition.get('config_management'))
+        template = jinja2.Template(yaml.dump(node_definition.get('resource')))
+        ret = yaml.load(template.render(**template_data),Loader=yaml.Loader)
+        #datalog.info("ConfigManagerSection after resolution: \"%r\"\n",ret)
+        return ret
+
     def resolve_config_management_section(self, node_definition, template_data):
         #datalog.info("ConfigManagerSection before resolution: \"%r\"\n",node_definition.get('config_management'))
         template = jinja2.Template(yaml.dump(node_definition.get('config_management')))
@@ -249,6 +255,10 @@ class CloudinitResolver(Resolver):
         #ib = self.info_broker
         node_id = self.node_id
         template_data = self.assemble_template_data(node_desc, node_definition)
+
+        if "resource" in node_definition:
+          resolved_res = self.resolve_resource_section(node_definition, template_data)
+          node_definition['resource'].update(resolved_res)
 
         # Resolve Config Manager section in node_definition if exists:
         if "config_management" in node_definition:
