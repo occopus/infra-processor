@@ -142,8 +142,7 @@ class CreateNode(Command):
                           instance_data['node_id'])
             raise NodeCreationError(instance_data, ex), None, sys.exc_info()[2]
         else:
-            log.info("Node %s/%s/%s has started",
-                     node_description['infra_id'],
+            log.info("Node %r/%r has been built successfully.",
                      node_description['name'],
                      instance_data['node_id'])
             return instance_data
@@ -187,17 +186,14 @@ class CreateNode(Command):
             instance_data)
 
         log.info(
-            "Node %s/%s/%s has been started successfully",
-            node_description['infra_id'],
+            "Node '%s'/'%s' has been started successfully",
             node_description['name'],
             node_id
         )
         log.info(
-            "Address of node %s/%s/%s: %r (%s)",
-            node_description['infra_id'],
+            "Address of node '%s'/'%s': %s",
             node_description['name'],
             node_id,
-            ib.get('node.resource.address', instance_data),
             ib.get('node.resource.ip_address', instance_data)
         )
 
@@ -237,7 +233,7 @@ class DropNode(Command):
 
     def perform(self, infraprocessor):
         try:
-            log.info('Dropping node %r (%r)', self.instance_data['node_description']['name'], self.instance_data['node_id'])
+            log.info('Dropping node %r/%r', self.instance_data['node_description']['name'], self.instance_data['node_id'])
             infraprocessor.resourcehandler.drop_node(self.instance_data)
             infraprocessor.configmanager.drop_node(self.instance_data)
             infraprocessor.uds.remove_nodes(self.instance_data['infra_id'],

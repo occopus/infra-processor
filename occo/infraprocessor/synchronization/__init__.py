@@ -113,14 +113,14 @@ def wait_for_node(instance_data,
     if timeout:
         start_time = time.time()
         finish_time = start_time + timeout
-        log.info(('Waiting for node %r:%r to become ready with '
+        log.info(('Waiting for node %r/%r to become ready with '
                   '%d seconds timeout. Deadline: %s'),
                  node_name,
                  node_id,
                  timeout,
                  datetime.datetime.fromtimestamp(finish_time).isoformat())
     else:
-        log.info('Waiting for node %r:%r to become ready. No timeout.', 
+        log.info('Waiting for node %r/%r to become ready. No timeout.', 
             node_name, node_id)
 
     status = ib.get('node.state', instance_data)
@@ -135,14 +135,14 @@ def wait_for_node(instance_data,
         if status in [node_status.SHUTDOWN, node_status.FAIL]:
             raise NodeFailedError(instance_data, status)
 
-        log.debug('Node %r:%r is not ready, waiting %r seconds.',
+        log.debug('Node %r/%r is not ready, waiting %r seconds.',
                   node_name, node_id, poll_delay)
         if not sleep(poll_delay, cancel_event):
-            log.debug('Waiting for node %r:%r has been cancelled.', node_name, node_id)
+            log.debug('Waiting for node %r/%r has been cancelled.', node_name, node_id)
             return
         status = ib.get('node.state', instance_data)
 
-    log.info('Node %r:%r is ready.', node_name, node_id)
+    log.info('Node %r/%r is ready.', node_name, node_id)
 
 class NodeSynchStrategy(factory.MultiBackend):
     """
