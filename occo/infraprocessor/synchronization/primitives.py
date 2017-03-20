@@ -83,7 +83,7 @@ class CompositeStatus(object):
         # all() is lazy; if force-evaluation is omitted, evaluation will stop
         # at the first False
         status = all(results)
-        log.info('  Overall health check result: %s', format_bool(status))
+        log.info('Health checking result: %s', format_bool(status))
         return status
 
     def get_detailed_status(self, tag, *args, **kwargs):
