@@ -123,6 +123,8 @@ class SequentialStrategy(Strategy):
             undo_command = self.infraprocessor.cri_drop_node(inst_data)
             try:
                 undo_command.perform(self.infraprocessor)
+            except NodeCreationError as nce:
+                log.debug(nce)
             except Exception:
                 # TODO: maybe store instance_data in UDS in case it's stuck?
                 log.exception(
