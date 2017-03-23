@@ -142,7 +142,7 @@ class CreateNode(Command):
                           instance_data['node_id'])
             raise NodeCreationError(instance_data, ex), None, sys.exc_info()[2]
         else:
-            log.info("Node %r/%r has been built successfully.",
+            log.debug("Node %r/%r has been built successfully.",
                      node_description['name'],
                      instance_data['node_id'])
             return instance_data
@@ -185,12 +185,12 @@ class CreateNode(Command):
             node_description['name'],
             instance_data)
 
-        log.info(
+        log.debug(
             "Node '%s'/'%s' has been started successfully",
             node_description['name'],
             node_id
         )
-        log.info(
+        log.debug(
             "Address of node '%s'/'%s': %s",
             node_description['name'],
             node_id,
