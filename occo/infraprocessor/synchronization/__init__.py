@@ -39,6 +39,9 @@ ib = occo.infobroker.main_info_broker
 
 PROTOCOL_ID = 'basic'
 
+def format_bool(b):
+    return node_status.READY if b else node_status.PENDING
+
 import time, datetime
 def sleep(timeout, cancel_event):
     """
@@ -77,9 +80,9 @@ def get_synch_strategy(instance_data):
     node_description = instance_data['node_description']
     resolved_node_definition = instance_data['resolved_node_definition']
     synch_type = node_synch_type(resolved_node_definition)
-    log.debug('Health checking strategy for node %r:%r is %r.',
+    log.debug('Health checking strategy for node %r/%r is %r.',
              node_description['name'], instance_data['node_id'], synch_type)
-    log.info('Health checking for node %r:%r',
+    log.info('Health checking for node %r/%r',
              node_description['name'], instance_data['node_id'])
 
     return NodeSynchStrategy.instantiate(
@@ -110,14 +113,14 @@ def wait_for_node(instance_data,
     if timeout:
         start_time = time.time()
         finish_time = start_time + timeout
-        log.info(('Waiting for node %r:%r to become ready with '
+        log.info(('Waiting for node %r/%r to become ready with '
                   '%d seconds timeout. Deadline: %s'),
                  node_name,
                  node_id,
                  timeout,
                  datetime.datetime.fromtimestamp(finish_time).isoformat())
     else:
-        log.info('Waiting for node %r:%r to become ready. No timeout.', 
+        log.info('Waiting for node %r/%r to become ready. No timeout.', 
             node_name, node_id)
 
     status = ib.get('node.state', instance_data)
@@ -132,14 +135,14 @@ def wait_for_node(instance_data,
         if status in [node_status.SHUTDOWN, node_status.FAIL]:
             raise NodeFailedError(instance_data, status)
 
-        log.debug('Node %r:%r is not ready, waiting %r seconds.',
+        log.debug('Node %r/%r is not ready, waiting %r seconds.',
                   node_name, node_id, poll_delay)
         if not sleep(poll_delay, cancel_event):
-            log.debug('Waiting for node %r:%r has been cancelled.', node_name, node_id)
+            log.debug('Waiting for node %r/%r has been cancelled.', node_name, node_id)
             return
         status = ib.get('node.state', instance_data)
 
-    log.info('Node %r:%r is ready.', node_name, node_id)
+    log.info('Node %r/%r is ready.', node_name, node_id)
 
 class NodeSynchStrategy(factory.MultiBackend):
     """
@@ -248,36 +251,41 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
     def reachable(self):
 	host = self.get_node_address()
         if self.get_kwargs().get('ping', True):
-            log.debug('Checking node reachability (%s)', self.node_id)
-            return ib.get('synch.node_reachable', host)
+            log.info('  Checking node reachability (%s):', self.node_id)
+            result = ib.get('synch.node_reachable', host)
+            log.info('    %s => %s', host, format_bool(result))
+            return result
         else:
-            log.debug('Skipping.')
             return True
 
     @status_component('Port Availability', basic_status)
     def ports_ready(self):
         host = self.get_node_address()
         ports = self.get_kwargs().get('ports', list())
-        for port in ports:
-            available = ib.get('synch.port_available', host, port)
-            if not available:
-                log.info('Port %s is still not available.', port)
-                return False
-            else:
-                log.info('Port %s has become available.', port)
-        return True
+        if ports:
+            result = True
+            log.info('  Checking port availability (%s):', self.node_id)
+            for port in ports:
+                available = ib.get('synch.port_available', host, port)
+                log.info('    %s => %s', port, format_bool(available))
+                if not available:
+                    result = False
+            return result
+        return True 
 
     @status_component('URL Availability', basic_status)
     def urls_ready(self):
         urls = self.get_kwargs().get('urls', list())
-        for fmt in urls:
-            url = self.resolve_parameter(fmt)
-            available = ib.get('synch.site_available', url)
-            if not available:
-                log.info('Site %r is still not available.', url)
-                return False
-            else:
-                log.info('Site %r has become available.', url)
+        if urls:
+            result = True
+            log.info('  Checking url availability (%s):', self.node_id)
+            for fmt in urls:
+                url = self.resolve_parameter(fmt)
+                available = ib.get('synch.site_available', url)
+                log.info('    %s => %s', url, format_bool(available))
+                if not available:
+                    result = False
+            return result
         return True
 
     @status_component('Attribute Availability', basic_status)
@@ -288,41 +296,38 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         """
         synch_attrs = self.resolved_node_definition.get('synch_attrs')
         if not synch_attrs:
-            # Nothing to synchronize upon
             return True
-
-        node_id = self.node_id
-
+        result = True
+        log.info('  Checking attribute availability (%s):', self.node_id)
         for attribute in synch_attrs:
-            log.debug('Checking attribute availability: %r.', attribute)
             try:
-                value = ib.get('node.attribute', node_id, attribute)
+                value = ib.get('node.attribute', self.node_id, attribute)
+                log.info('    %s => %s', attribute, format_bool(True))
             except KeyError:
-                log.info(
-                    'Attribute %r is still unavailable (not found).', attribute)
-                return False
+                log.info('    %s => %s', attribute, format_bool(False))
+                result = False
+                continue
             if value is None:
-                log.info(
-                    'Attribute %r is still unavailable (no value).', attribute)
-                return False
-
-        log.info('All attributes of node %r are available.', node_id)
-        return True
+                log.info('    %s => %s', attribute, format_bool(False))
+                result = False
+        return result
 
     @status_component('Mysql database availability', basic_status)
     def mysqldbs_ready(self):
         host = self.get_node_address()
-        dblist = self.get_kwargs().get('mysqldbs', list())
-        for db in dblist:
-            name = self.resolve_parameter(db.get('name'))
-            user = self.resolve_parameter(db.get('user'))
-            pwd = self.resolve_parameter(db.get('pass')) 
-            available = ib.get('synch.mysql_ready', host, name, user, pwd)
-            if not available:
-                log.info('Mysql database \'%r\' is still not available.', name)
-                return False
-            else:
-                log.info('Mysql database \'%r\' has become available.', name)
+        dblist = self.get_kwargs().get('mysqldbs', list())    
+        if len(dblist):
+            result = True
+            log.info('  Checking mysql availability (%s):', self.node_id)
+            for db in dblist:
+                name = self.resolve_parameter(db.get('name'))
+                user = self.resolve_parameter(db.get('user'))
+                pwd = self.resolve_parameter(db.get('pass')) 
+                available = ib.get('synch.mysql_ready', host, name, user, pwd)
+                log.info('    %s/%s => %s', name, user, format_bool(available))
+                if not available:
+                    result = False
+            return result
         return True
 
 

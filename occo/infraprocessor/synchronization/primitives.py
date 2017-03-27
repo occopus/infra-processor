@@ -50,11 +50,11 @@ class StatusItem(object):
         self.desc, self.fun = description, fun
 
     def evaluate(self, fun_self, *args, **kwargs):
-        log.debug('    Querying %r (%r, %r)...',
-                  self.desc, args, kwargs)
-        val = self.fun(fun_self, *args, **kwargs)
-        log.info('    %s => %s', self.desc, format_bool(val))
-        return val
+        #log.debug('    Querying %r (%r, %r)...',
+        #          self.desc, args, kwargs)
+        return self.fun(fun_self, *args, **kwargs)
+        #log.info('    %s => %s', self.desc, format_bool(val))
+        #return val
 
 class StatusTag(object):
     """ Status components can be gathered in a tag object. """
@@ -76,7 +76,6 @@ class CompositeStatus(object):
     """Represents a composite status. """
     def get_composite_status(self, tag, lazy=True, *args, **kwargs):
         log.debug('Evaluating status of %r', tag.name)
-
         results = (item.evaluate(self, *args, **kwargs) for item in tag.items)
         if not lazy:
             # list() force-evaluates all items
@@ -84,7 +83,7 @@ class CompositeStatus(object):
         # all() is lazy; if force-evaluation is omitted, evaluation will stop
         # at the first False
         status = all(results)
-        log.info('Health check result: %s', format_bool(status))
+        log.info('Health checking result: %s', format_bool(status))
         return status
 
     def get_detailed_status(self, tag, *args, **kwargs):
@@ -128,12 +127,10 @@ class SynchronizationProvider(ib.InfoProvider):
 	import socket
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            log.debug('Checking port availability: %r', port)
 	    s.connect((host, port))
 	    s.shutdown(2)
 	    s.close()
         except:
-            log.warning('Error accessing port %s', port)
             return False
         else:
             return True
@@ -142,10 +139,9 @@ class SynchronizationProvider(ib.InfoProvider):
     @util.wet_method(True)
     def site_available(self, url, **kwargs):
         try:
-            log.debug('Checking url availability: %r', url)
             response = util.do_request(url, 'head', **kwargs)
         except (ConnectionError, HTTPTimeout, HTTPError) as ex:
-            log.warning('Error accessing [%s]: %s', url, ex)
+            log.debug('Error accessing [%s]: %s', url, ex)
             return False
         else:
             return response.success

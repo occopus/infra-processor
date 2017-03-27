@@ -27,7 +27,7 @@ import occo.util as util
 import occo.exceptions as exceptions
 import occo.util.factory as factory
 import sys
-import yaml
+from ruamel import yaml
 import jinja2
 from occo.infraprocessor.node_resolution import Resolver, ContextSchemaChecker
 from occo.exceptions import SchemaError

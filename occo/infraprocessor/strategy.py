@@ -20,7 +20,7 @@
 
 __all__ = ['Strategy', 'SequentialStrategy', 'ParallelProcessesStrategy']
 
-import yaml
+from ruamel import yaml
 import logging
 import os, signal
 import sys, traceback
@@ -123,6 +123,8 @@ class SequentialStrategy(Strategy):
             undo_command = self.infraprocessor.cri_drop_node(inst_data)
             try:
                 undo_command.perform(self.infraprocessor)
+            except NodeCreationError as nce:
+                log.debug(nce)
             except Exception:
                 # TODO: maybe store instance_data in UDS in case it's stuck?
                 log.exception(
@@ -252,9 +254,11 @@ class ParallelProcessesStrategy(Strategy):
         del self.processes[procid]
 
         if error:
-            error['value'] = yaml.load(error['value'])
+            error['value'] = yaml.load(error['value'], Loader=yaml.Loader)
             log.debug('Exception occured in sub-process:\n%s\n%r',
                       error['tbstr'], clean(error['value']))
+            log.debug('Re-raising the following exception: %s with content: %s',
+                      error['type'],error['value'])
             raise error['type'], error['value']
         else:
             self.results[procid] = result
