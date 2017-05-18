@@ -138,8 +138,10 @@ class CreateNode(Command):
             # This is a pre-cooked exception, no need for transformation
             raise
         except Exception as ex:
-            log.exception('Error while creating node %r:',
-                          instance_data['node_id'])
+            log.info('Error while creating node %r:%r',
+                          instance_data['node_id'],str(ex))
+            log.debug('Error while creating node %r:%r\n%r',
+                          instance_data['node_id'],str(ex),sys.exc_info()[2])
             raise NodeCreationError(instance_data, ex), None, sys.exc_info()[2]
         else:
             log.debug("Node %r/%r has been built successfully.",
