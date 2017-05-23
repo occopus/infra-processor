@@ -320,7 +320,13 @@ class ParallelProcessesStrategy(Strategy):
                 self._process_one_result()
             except KeyboardInterrupt:
                 log.info('Received Ctrl+C while waiting for sub-processes '
-                         'to exit. Ignoring.')
+                         'to exit. Interrupting sub-processes...')
+                for p in self.processes.itervalues():
+                    try:
+                       log.debug('Sending SIGINT to %r', p.name)
+                       os.kill(p.pid, signal.SIGINT)
+                    except Exception as ex:
+                       log.debug('IGNORING exception while sending signal: %r',str(ex))
             except Exception as ex:
                 log.debug(
                     'IGNORING exception while waiting for sub-processes: %r',str(ex))
