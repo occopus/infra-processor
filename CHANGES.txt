@@ -1,3 +1,7 @@
+v1.5 - May 2017
+- Improve parallel node creation
+- Remove cloud-broker node resolver (replaced by cloud-init)
+
 v1.4 - March 2017
 - Fixes in log messages
 - Dynamize vm naming: resolve name and introduce cut primitive

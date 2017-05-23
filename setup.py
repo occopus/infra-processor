@@ -18,7 +18,7 @@ from pip.req import parse_requirements
 
 setuptools.setup(
     name='OCCO-InfraProcessor',
-    version='1.4',
+    version='1.5',
     author='MTA SZTAKI',
     author_email='occopus@lpds.sztaki.hu',
     namespace_packages=[
@@ -38,7 +38,6 @@ setuptools.setup(
         'occo.plugins.infraprocessor.basic_infraprocessor',
         'occo.plugins.infraprocessor.node_resolution.basic',
         'occo.plugins.infraprocessor.node_resolution.cloudinit',
-        'occo.plugins.infraprocessor.node_resolution.cloudbroker',
         'occo.plugins.infraprocessor.node_resolution.docker',
     ],
     scripts=[],

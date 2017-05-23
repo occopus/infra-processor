@@ -125,10 +125,10 @@ class SequentialStrategy(Strategy):
                 undo_command.perform(self.infraprocessor)
             except NodeCreationError as nce:
                 log.debug(nce)
-            except Exception:
+            except Exception as ex:
                 # TODO: maybe store instance_data in UDS in case it's stuck?
-                log.exception(
-                    'IGNORING error while dropping partially started node')
+                log.debug(
+                    'IGNORING error while dropping partially started node: %r',str(ex))
 
         self.cancelled = True
 
@@ -146,7 +146,7 @@ class SequentialStrategy(Strategy):
             try:
                 result = i.perform(infraprocessor)
             except MinorInfraProcessorError as ex:
-                log.error('IGNORING non-critical error: %s', ex)
+                log.debug('IGNORING non-critical error: %s', ex)
                 results.append(None)
             else:
                 results.append(result)
@@ -173,23 +173,34 @@ class PerformProcess(multiprocessing.Process):
         self.result_queue.put((self.procid, result, None))
 
     def return_exception(self, exc_info):
-        exc = exc_info[1]
+        err_type, err_value, err_tbstr = exc_info[0], None, None
+        try:
+            err_value = yaml.dump(exc_info[1])
+        except KeyboardInterrupt, Exception:
+            pass
+        try:
+            err_tbstr = ''.join(traceback.format_tb(exc_info[2]))
+        except KeyboardInterrupt, Exception:
+            pass
         error = {
-            'type'  : exc_info[0],
-            'value' : yaml.dump(exc),
-            # Raw traceback cannot be passed through Queue
-            'tbstr' : ''.join(traceback.format_tb(exc_info[2])),
+            'type'  : err_type,
+            'value' : err_value,
+            'tbstr' : err_tbstr,
         }
-        self.log.debug('Sub-process execution failed: %r', exc)
+        self.log.debug('Sub-process execution failed: %r', exc_info[1])
         self.result_queue.put((self.procid, None, error))
 
     def run(self):
         try:
-            self.return_result(self.instruction.perform(self.infraprocessor))
+            ret = self.instruction.perform(self.infraprocessor)
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            self.return_result(ret)
         except KeyboardInterrupt:
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
             self.log.debug('Operation cancelled.')
             self.return_result(None)
         except Exception:
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
             exc = sys.exc_info()
             self.return_exception(exc)
 
@@ -254,6 +265,7 @@ class ParallelProcessesStrategy(Strategy):
         del self.processes[procid]
 
         if error:
+            #log.debug("Exception value in sub-process: %s",error['value'])
             error['value'] = yaml.load(error['value'], Loader=yaml.Loader)
             log.debug('Exception occured in sub-process:\n%s\n%r',
                       error['tbstr'], clean(error['value']))
@@ -293,10 +305,10 @@ class ParallelProcessesStrategy(Strategy):
             try:
                 log.debug('Sending SIGINT to %r', p.name)
                 os.kill(p.pid, signal.SIGINT)
-            except:
-                log.exception('IGNORING exception while sending signal:')
+            except Exception as ex:
+                log.debug('IGNORING exception while sending signal: %r',str(ex))
 
-        if isinstance(reason, NodeCreationError):
+        if isinstance(reason, NodeCreationError) and 'instance_id' in reason.instance_data:
             inst_data = reason.instance_data
             log.debug('Undoing create node for %r', inst_data['node_id'])
             undo_command = self.infraprocessor.cri_drop_node(inst_data)
@@ -308,8 +320,14 @@ class ParallelProcessesStrategy(Strategy):
                 self._process_one_result()
             except KeyboardInterrupt:
                 log.info('Received Ctrl+C while waiting for sub-processes '
-                         'to exit.Aborting.')
-                raise
-            except BaseException:
-                log.exception(
-                    'IGNORING exception while waiting for sub-processes:')
+                         'to exit. Interrupting sub-processes...')
+                for p in self.processes.itervalues():
+                    try:
+                       log.debug('Sending SIGINT to %r', p.name)
+                       os.kill(p.pid, signal.SIGINT)
+                    except Exception as ex:
+                       log.debug('IGNORING exception while sending signal: %r',str(ex))
+            except Exception as ex:
+                log.debug(
+                    'IGNORING exception while waiting for sub-processes: %r',str(ex))
+
