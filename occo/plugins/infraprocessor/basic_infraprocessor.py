@@ -32,6 +32,7 @@ from occo.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
 from occo.exceptions.orchestration import *
 import traceback
+import time
 
 log = logging.getLogger('occo.infraprocessor.basic')
 datalog = logging.getLogger('occo.data.infraprocessor.basic')
@@ -175,6 +176,7 @@ class CreateNode(Command):
         infraprocessor.configmanager.register_node(resolved_node_def)
         instance_id = infraprocessor.resourcehandler.create_node(resolved_node_def)
         instance_data['instance_id'] = instance_id
+        instance_data['instance_start_time'] = time.time()
 
         import occo.infraprocessor.synchronization as synch
 
