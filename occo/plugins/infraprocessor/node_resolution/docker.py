@@ -109,7 +109,7 @@ class DockerResolver(Resolver):
         attrs = node_definition.get('contextualisation',dict()).get('attributes', dict())
         attrs['env'] = node_definition['contextualisation']['env']
         attrs['command'] = node_definition['contextualisation']['command']
-        template_data['context_variables'] = {a: context[a] for a in context}
+        template_data['context_variables'] = {a: context[a] for a in context} if context is not None else {}
         attrs.update(node_desc.get('attributes', dict()))
         attr_mapping = node_desc.get('mappings', dict()).get('inbound', dict())
 
