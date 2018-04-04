@@ -118,6 +118,7 @@ class CreateNode(Command):
         )
 
         log.info('Creating node %r/%r', node_description['name'], instance_data['node_id'])
+        ib.main_eventlog.node_creating(instance_data)
 
         try:
             self._perform_create(infraprocessor, instance_data)
@@ -238,6 +239,7 @@ class DropNode(Command):
     def perform(self, infraprocessor):
         try:
             log.info('Dropping node %r/%r', self.instance_data['node_description']['name'], self.instance_data['node_id'])
+            ib.main_eventlog.node_deleting(self.instance_data)
             infraprocessor.resourcehandler.drop_node(self.instance_data)
             infraprocessor.configmanager.drop_node(self.instance_data)
             infraprocessor.uds.remove_nodes(self.instance_data['infra_id'],
