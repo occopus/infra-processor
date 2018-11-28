@@ -29,6 +29,7 @@ import occo.util as util
 import occo.exceptions as exceptions
 import occo.util.factory as factory
 import sys
+import subprocess
 from ruamel import yaml
 import jinja2
 from occo.infraprocessor.node_resolution import Resolver, ContextSchemaChecker
@@ -176,6 +177,17 @@ class CloudinitResolver(Resolver):
         def getipall(node_name):
             return [ main_info_broker.get('node.resource.address', node)
                      for node in find_node_id(node_name, allnodes=True) ]
+
+        def cmd(command):
+            try:
+              stdout = subprocess.check_output(command.split())
+              log.debug('Command "{0}" executed, stdout collected successfully.'.format(command))
+              datalog.debug('Command "{0}" executed, stdout:\n{1}'.format(command,stdout))
+              return stdout
+            except Exception as e:
+              log.error('Command "{0}" failed with exception: {1}'.format(command,str(e)))
+              return 'Command in cloud-init failed. See Occopus log for details!'.format(command)
+
         # As long as source_data is read-only, the following code is fine.
         # As it is used only for rendering a template, it is yet read-only.
         # If, for any reason, something starts modifying it, dict.update()-s
@@ -189,6 +201,7 @@ class CloudinitResolver(Resolver):
         source_data['getip'] = getip
         source_data['getipall'] = getipall
         source_data['cut'] = cut
+        source_data['cmd'] = cmd
 
         return source_data
 
