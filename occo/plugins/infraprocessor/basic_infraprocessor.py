@@ -199,7 +199,7 @@ class CreateNode(Command):
             "Address of node '%s'/'%s': %s",
             node_description['name'],
             node_id,
-            ib.get('node.resource.ip_address', instance_data)
+            ib.get('node.resource.address', instance_data)
         )
 
         synch.wait_for_node(instance_data,

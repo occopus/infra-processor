@@ -174,6 +174,10 @@ class CloudinitResolver(Resolver):
             return main_info_broker.get('node.resource.address',
                    find_node_id(node_name, allnodes=False))
 
+        def getprivip(node_name):
+            return main_info_broker.get('node.resource.ip_address',
+                   find_node_id(node_name, allnodes=False))
+
         def getipall(node_name):
             return [ main_info_broker.get('node.resource.address', node)
                      for node in find_node_id(node_name, allnodes=True) ]
@@ -199,6 +203,7 @@ class CloudinitResolver(Resolver):
         source_data['ibget'] = main_info_broker.get
         source_data['find_node_id'] = find_node_id
         source_data['getip'] = getip
+        source_data['getprivip'] = getprivip
         source_data['getipall'] = getipall
         source_data['cut'] = cut
         source_data['cmd'] = cmd
