@@ -23,6 +23,7 @@
 
 import logging
 import occo.util.factory as factory
+import occo.infobroker as ib
 from occo.infraprocessor.strategy import Strategy
 
 log = logging.getLogger('occo.infraprocessor')
@@ -58,7 +59,7 @@ class InfraProcessor(factory.MultiBackend):
         self.strategy = Strategy.from_config(process_strategy)
         log.debug('Initialized InfraProcessor with strategy %s', self.strategy)
 
-    def push_instructions(self, instructions):
+    def push_instructions(self, infra_id, instructions):
         """
         Performs the given list of independent instructions according to the
         strategy.
@@ -76,7 +77,9 @@ class InfraProcessor(factory.MultiBackend):
             instructions if hasattr(instructions, '__iter__') \
             else (instructions,)
         log.debug('Pushing instruction list: %r', instruction_list)
-        return self.strategy.perform(self, instruction_list)
+        rv = self.strategy.perform(self, instruction_list)
+        ib.main_eventlog.infrastructure_updated(infra_id)
+        return rv
 
     def cri_create_infrastructure(self, infra_id):
         """ Create a primitive that will create an infrastructure instance. """

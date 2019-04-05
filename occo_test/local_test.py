@@ -38,7 +38,7 @@ class LocalTest(unittest.TestCase):
         infrap = ip.InfraProcessor.instantiate('basic')
         eid = uid()
         cmd = infrap.cri_create_infrastructure(eid)
-        infrap.push_instructions(cmd)
+        infrap.push_instructions(eid, cmd)
         self.assertEqual(repr(self.ib), '{0}:[]'.format(eid))
     def test_create_node(self):
         infrap = ip.InfraProcessor.instantiate('basic')
@@ -46,8 +46,8 @@ class LocalTest(unittest.TestCase):
         node = DummyNode(eid)
         cmd_cre = infrap.cri_create_infrastructure(eid)
         cmd_crn = infrap.cri_create_node(node)
-        infrap.push_instructions(cmd_cre)
-        node = infrap.push_instructions(cmd_crn)[0]
+        infrap.push_instructions(eid, cmd_cre)
+        node = infrap.push_instructions(eid, cmd_crn)[0]
         self.assertEqual(
             repr(self.ib),
             '{0}:[{1}_True]'.format(eid, node['node_id']))
@@ -57,10 +57,10 @@ class LocalTest(unittest.TestCase):
         node = DummyNode(eid)
         cmd_cre = infrap.cri_create_infrastructure(eid)
         cmd_crn = infrap.cri_create_node(node)
-        infrap.push_instructions(cmd_cre)
-        node = infrap.push_instructions(cmd_crn)[0]
+        infrap.push_instructions(eid, cmd_cre)
+        node = infrap.push_instructions(eid, cmd_crn)[0]
         cmd_rmn = infrap.cri_drop_node(node)
-        infrap.push_instructions(cmd_rmn)
+        infrap.push_instructions(eid, cmd_rmn)
         self.assertEqual(repr(self.ib), '{0}:[]'.format(eid))
     def test_drop_infrastructure(self):
         infrap = ip.InfraProcessor.instantiate('basic')
@@ -68,12 +68,12 @@ class LocalTest(unittest.TestCase):
         node = DummyNode(eid)
         cmd_cre = infrap.cri_create_infrastructure(eid)
         cmd_crn = infrap.cri_create_node(node)
-        infrap.push_instructions(cmd_cre)
-        node = infrap.push_instructions(cmd_crn)[0]
+        infrap.push_instructions(eid, cmd_cre)
+        node = infrap.push_instructions(eid, cmd_crn)[0]
         cmd_rmn = infrap.cri_drop_node(node)
         cmd_rme = infrap.cri_drop_infrastructure(eid)
-        infrap.push_instructions(cmd_rmn)
-        infrap.push_instructions(cmd_rme)
+        infrap.push_instructions(eid, cmd_rmn)
+        infrap.push_instructions(eid, cmd_rme)
         self.assertEqual(repr(self.ib), '')
     def test_create_multiple_nodes(self):
         infrap = ip.InfraProcessor.instantiate('basic')
@@ -81,8 +81,8 @@ class LocalTest(unittest.TestCase):
         nodes = list(DummyNode(eid) for i in xrange(5))
         cmd_cre = infrap.cri_create_infrastructure(eid)
         cmd_crns = (infrap.cri_create_node(node) for node in nodes)
-        infrap.push_instructions(cmd_cre)
-        nodes = infrap.push_instructions(cmd_crns)
+        infrap.push_instructions(eid, cmd_cre)
+        nodes = infrap.push_instructions(eid, cmd_crns)
         self.assertEqual(len(self.ib.environments), 1)
         self.assertEqual(len(self.ib.environments.values()[0]), 5)
     def test_cancel_pending(self):
@@ -97,5 +97,5 @@ class LocalTest(unittest.TestCase):
         cmd_cre = infrap.cri_create_infrastructure(eid)
         cmd_crns = [infrap.cri_create_node(node_1),
                     infrap.cri_create_node(node_2)]
-        infrap.push_instructions(cmd_cre)
-        infrap.push_instructions(cmd_crns)
+        infrap.push_instructions(eid, cmd_cre)
+        infrap.push_instructions(eid, cmd_crns)

@@ -32,6 +32,7 @@ from occo.infraprocessor import InfraProcessor, Command
 from occo.infraprocessor.strategy import Strategy
 from occo.exceptions.orchestration import *
 import traceback
+import time
 
 log = logging.getLogger('occo.infraprocessor.basic')
 datalog = logging.getLogger('occo.data.infraprocessor.basic')
@@ -117,6 +118,7 @@ class CreateNode(Command):
         )
 
         log.info('Creating node %r/%r', node_description['name'], instance_data['node_id'])
+        ib.main_eventlog.node_creating(instance_data)
 
         try:
             self._perform_create(infraprocessor, instance_data)
@@ -175,6 +177,7 @@ class CreateNode(Command):
         infraprocessor.configmanager.register_node(resolved_node_def)
         instance_id = infraprocessor.resourcehandler.create_node(resolved_node_def)
         instance_data['instance_id'] = instance_id
+        instance_data['instance_start_time'] = time.time()
 
         import occo.infraprocessor.synchronization as synch
 
@@ -196,7 +199,7 @@ class CreateNode(Command):
             "Address of node '%s'/'%s': %s",
             node_description['name'],
             node_id,
-            ib.get('node.resource.ip_address', instance_data)
+            ib.get('node.resource.address', instance_data)
         )
 
         synch.wait_for_node(instance_data,
@@ -236,6 +239,7 @@ class DropNode(Command):
     def perform(self, infraprocessor):
         try:
             log.info('Dropping node %r/%r', self.instance_data['node_description']['name'], self.instance_data['node_id'])
+            ib.main_eventlog.node_deleting(self.instance_data)
             infraprocessor.resourcehandler.drop_node(self.instance_data)
             infraprocessor.configmanager.drop_node(self.instance_data)
             infraprocessor.uds.remove_nodes(self.instance_data['infra_id'],

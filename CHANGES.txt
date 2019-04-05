@@ -1,3 +1,11 @@
+v1.6 - Apr 2019
+- Remove req import from setup.py
+- Improve docker context resolution
+- Store startup time of instance
+- Add node create/delet events
+- Add cmd() method in cloud-init resolution
+- Add getprivip() in cloud-init resolution
+
 v1.5 - May 2017
 - Improve parallel node creation
 - Remove cloud-broker node resolver (replaced by cloud-init)
