@@ -165,12 +165,21 @@ class DockerResolver(Resolver):
             return inputstr[start:end]
 
         def getip(node_name):
-            return main_info_broker.get('node.resource.address',
+            nra = main_info_broker.get('node.resource.address',
+                  find_node_id(node_name, allnodes=False))
+            return nra[0] if isinstance(nra,list) else nra
+
+        def getprivip(node_name):
+            return main_info_broker.get('node.resource.ip_address',
                    find_node_id(node_name, allnodes=False))
 
         def getipall(node_name):
-            return [ main_info_broker.get('node.resource.address', node)
-                     for node in find_node_id(node_name, allnodes=True) ]
+            l = list()
+            for node in find_node_id(node_name, allnodes=True):
+              nra = main_info_broker.get('node.resource.address', node)
+              l = l[:] + [nra[0]] if isinstance(nra,list) else l[:] + [nra]
+            return l
+
         # As long as source_data is read-only, the following code is fine.
         # As it is used only for rendering a template, it is yet read-only.
         # If, for any reason, something starts modifying it, dict.update()-s

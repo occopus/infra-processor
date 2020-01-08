@@ -171,16 +171,20 @@ class CloudinitResolver(Resolver):
             return inputstr[start:end]
 
         def getip(node_name):
-            return main_info_broker.get('node.resource.address',
-                   find_node_id(node_name, allnodes=False))
+            nra = main_info_broker.get('node.resource.address',
+                  find_node_id(node_name, allnodes=False))
+            return nra[0] if isinstance(nra,list) else nra
 
         def getprivip(node_name):
             return main_info_broker.get('node.resource.ip_address',
                    find_node_id(node_name, allnodes=False))
 
         def getipall(node_name):
-            return [ main_info_broker.get('node.resource.address', node)
-                     for node in find_node_id(node_name, allnodes=True) ]
+            l = list()
+            for node in find_node_id(node_name, allnodes=True):
+              nra = main_info_broker.get('node.resource.address', node)
+              l = l[:] + [nra[0]] if isinstance(nra,list) else l[:] + [nra]
+            return l
 
         def cmd(command):
             try:

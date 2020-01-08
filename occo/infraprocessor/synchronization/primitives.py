@@ -102,7 +102,8 @@ class SynchronizationProvider(ib.InfoProvider):
     @util.wet_method('127.0.0.1')
     def get_server_address(self, **node_spec):
         inst = ib.main_info_broker.get('node.find_one', **node_spec)
-        return ib.main_info_broker.get('node.resource.address', inst)
+        nra = ib.main_info_broker.get('node.resource.address', inst)
+        return nra[0] if isinstance(nra,list) else nra
 
     @ib.provides('synch.node_reachable')
     @ib.provides('node.network_reachable')

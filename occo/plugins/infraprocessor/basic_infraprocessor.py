@@ -195,11 +195,12 @@ class CreateNode(Command):
             node_description['name'],
             node_id
         )
+        nra = ib.get('node.resource.address', instance_data)
         log.debug(
             "Address of node '%s'/'%s': %s",
             node_description['name'],
             node_id,
-            ib.get('node.resource.address', instance_data)
+            nra[0] if isinstance(nra,list) else nra
         )
 
         synch.wait_for_node(instance_data,
