@@ -13,7 +13,7 @@
 ### limitations under the License.
 
 import unittest
-from common import *
+from .common import *
 import occo.plugins.infraprocessor.basic_infraprocessor as bip
 import occo.infraprocessor as ip
 import occo.util as util

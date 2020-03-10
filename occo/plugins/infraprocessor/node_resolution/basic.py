@@ -17,7 +17,7 @@
 
 """
 
-from __future__ import absolute_import
+
 
 __all__ = ['BasicResolver']
 
@@ -46,14 +46,14 @@ class BasicResolver(Resolver):
         Recursively render attributes.
         """
         if isinstance(attrs, dict):
-            for k, v in attrs.iteritems():
+            for k, v in attrs.items():
                 attrs[k] = self.attr_template_resolve(v, template_data)
             return attrs
         elif isinstance(attrs, list):
-            for i in xrange(len(attrs)):
+            for i in range(len(attrs)):
                 attrs[i] = self.attr_template_resolve(attrs[i], template_data)
             return attrs
-        elif isinstance(attrs, basestring):
+        elif isinstance(attrs, str):
             template = jinja2.Template(attrs)
             return template.render(**template_data)
         else:
@@ -68,7 +68,7 @@ class BasicResolver(Resolver):
             dict(source_role="{0}_{1}".format(node['infra_id'], role),
                  source_attribute=mapping['attributes'][0],
                  destination_attribute=mapping['attributes'][1])
-            for role, mappings in attr_mapping.iteritems()
+            for role, mappings in attr_mapping.items()
             for mapping in mappings
         ]
 
@@ -103,7 +103,7 @@ class BasicResolver(Resolver):
         outedges = node_desc.get('mappings', dict()).get('outbound', dict())
 
         return [mapping['attributes'][0]
-                for mappings in outedges.itervalues() for mapping in mappings
+                for mappings in outedges.values() for mapping in mappings
                 if mapping['synch']]
 
     def assemble_template_data(self, node_desc, node_definition):

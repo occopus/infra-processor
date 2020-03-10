@@ -170,7 +170,7 @@ class NodeSynchStrategy(factory.MultiBackend):
         self.instance_data = instance_data
         self.node_id = instance_data['node_id']
         self.infra_id = resolved_node_definition['infra_id']
-	self.node_address = ib.get('node.address', infra_id=self.infra_id, node_id=self.node_id)
+        self.node_address = ib.get('node.address', infra_id=self.infra_id, node_id=self.node_id)
 
     def generate_report(self):
         """
@@ -223,7 +223,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         if not hasattr(self, 'kwargs'):
             self.kwargs = self.resolved_node_definition.get(
                 'health_check', dict())
-            if isinstance(self.kwargs, basestring):
+            if isinstance(self.kwargs, str):
                 # health_check has been specified as a non-parameterized
                 # string.
                 self.kwargs = dict()
@@ -233,7 +233,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
         return dict(infra_id=self.infra_id, node_id=self.node_id)
 
     def get_node_address(self):
-	return self.node_address
+        return self.node_address
 
     def resolve_parameter(self, fmt):
         data = dict(
@@ -249,7 +249,7 @@ class BasicNodeSynchStrategy(CompositeStatus, NodeSynchStrategy):
 
     @status_component('Network reachability', basic_status)
     def reachable(self):
-	host = self.get_node_address()
+        host = self.get_node_address()
         if self.get_kwargs().get('ping', True):
             log.info('  Checking node reachability (%s):', self.node_id)
             result = ib.get('synch.node_reachable', host)

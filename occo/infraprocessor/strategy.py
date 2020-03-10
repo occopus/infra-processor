@@ -176,11 +176,11 @@ class PerformProcess(multiprocessing.Process):
         err_type, err_value, err_tbstr = exc_info[0], None, None
         try:
             err_value = yaml.dump(exc_info[1])
-        except KeyboardInterrupt, Exception:
+        except KeyboardInterrupt as Exception:
             pass
         try:
             err_tbstr = ''.join(traceback.format_tb(exc_info[2]))
-        except KeyboardInterrupt, Exception:
+        except KeyboardInterrupt as Exception:
             pass
         error = {
             'type'  : err_type,
@@ -271,7 +271,7 @@ class ParallelProcessesStrategy(Strategy):
                       error['tbstr'], clean(error['value']))
             log.debug('Re-raising the following exception: %s with content: %s',
                       error['type'],error['value'])
-            raise error['type'], error['value']
+            raise error['type'](error['value'])
         else:
             self.results[procid] = result
 
@@ -282,7 +282,7 @@ class ParallelProcessesStrategy(Strategy):
 
         # Start all processes
         log.debug('Starting sub-process')
-        for p in self.processes.itervalues():
+        for p in list(self.processes.values()):
             log.debug('Starting sub-process for %r', p.instruction)
             p.start()
 
@@ -301,7 +301,7 @@ class ParallelProcessesStrategy(Strategy):
     def cancel_pending(self, reason=None):
         log.debug('Cancelling pending sub-processes')
 
-        for p in self.processes.itervalues():
+        for p in list(self.processes.values()):
             try:
                 log.debug('Sending SIGINT to %r', p.name)
                 os.kill(p.pid, signal.SIGINT)
@@ -321,7 +321,7 @@ class ParallelProcessesStrategy(Strategy):
             except KeyboardInterrupt:
                 log.info('Received Ctrl+C while waiting for sub-processes '
                          'to exit. Interrupting sub-processes...')
-                for p in self.processes.itervalues():
+                for p in list(self.processes.values()):
                     try:
                        log.debug('Sending SIGINT to %r', p.name)
                        os.kill(p.pid, signal.SIGINT)

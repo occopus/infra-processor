@@ -13,7 +13,7 @@
 ### limitations under the License.
 
 import unittest
-from common import *
+from .common import *
 import occo.infobroker as ib
 import occo.infraprocessor as ip
 import threading

@@ -47,10 +47,9 @@ setuptools.setup(
     install_requires=[
         'argparse',
         'Jinja2',
-        'mysql-python',
+        'mysql-connector-python',
         'python-dateutil',
         'ruamel.yaml',
-        'ruamel.ordereddict',
         'OCCO-InfoBroker',
         'OCCO-Util',
     ],
