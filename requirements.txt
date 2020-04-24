@@ -1,6 +1,6 @@
 argparse==1.2.1
-Jinja2==2.7.3
+Jinja2==2.10.1
 python-dateutil==2.2
-PyYAML==3.11
+PyYAML==4.2b1
 OCCO-InfoBroker==0.2.0
 OCCO-Util==0.2.0
