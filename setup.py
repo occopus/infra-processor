@@ -17,7 +17,7 @@ import setuptools
 
 setuptools.setup(
     name='OCCO-InfraProcessor',
-    version='1.6',
+    version='1.7',
     author='MTA SZTAKI',
     author_email='occopus@lpds.sztaki.hu',
     namespace_packages=[
@@ -47,10 +47,9 @@ setuptools.setup(
     install_requires=[
         'argparse',
         'Jinja2',
-        'mysql-python',
+        'mysql-connector-python',
         'python-dateutil',
         'ruamel.yaml',
-        'ruamel.ordereddict',
         'OCCO-InfoBroker',
         'OCCO-Util',
     ],

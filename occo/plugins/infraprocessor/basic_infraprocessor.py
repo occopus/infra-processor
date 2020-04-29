@@ -69,8 +69,7 @@ class CreateInfrastructure(Command):
         except Exception as ex:
             log.exception('Error while creating infrastructure %r:',
                           self.infra_id)
-            raise InfrastructureCreationError(self.infra_id, ex), \
-                None, sys.exc_info()[2]
+            raise InfrastructureCreationError(self.infra_id, ex).with_traceback(sys.exc_info()[2])
         else:
             return result
 
@@ -144,7 +143,7 @@ class CreateNode(Command):
                           instance_data['node_id'],str(ex))
             log.debug('Error while creating node %r:%r\n%r',
                           instance_data['node_id'],str(ex),sys.exc_info()[2])
-            raise NodeCreationError(instance_data, ex), None, sys.exc_info()[2]
+            raise NodeCreationError(instance_data, ex).with_traceback(sys.exc_info()[2])
         else:
             log.debug("Node %r/%r has been built successfully.",
                      node_description['name'],
@@ -195,11 +194,12 @@ class CreateNode(Command):
             node_description['name'],
             node_id
         )
+        nra = ib.get('node.resource.address', instance_data)
         log.debug(
             "Address of node '%s'/'%s': %s",
             node_description['name'],
             node_id,
-            ib.get('node.resource.address', instance_data)
+            nra[0] if isinstance(nra,list) else nra
         )
 
         synch.wait_for_node(instance_data,
@@ -259,8 +259,7 @@ class DropNode(Command):
                 MinorInfraProcessorError(
                     self.instance_data['infra_id'],
                     ex
-                ), \
-                None, sys.exc_info()[2]
+                ).with_traceback(sys.exc_info()[2])
 
 class DropInfrastructure(Command):
     """
@@ -288,8 +287,7 @@ class DropInfrastructure(Command):
             log.error('Error while dropping infrastructure %r:',
                           self.infra_id)
             log.debug(traceback.format_exc())
-            raise MinorInfraProcessorError(self.infra_id, ex), \
-                None, sys.exc_info()[2]
+            raise MinorInfraProcessorError(self.infra_id, ex).with_traceback(sys.exc_info()[2])
 
 @factory.register(InfraProcessor, 'basic')
 class BasicInfraProcessor(InfraProcessor):

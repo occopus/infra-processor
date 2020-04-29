@@ -108,7 +108,7 @@ class DummyInfoBroker(ib.InfoRouter):
             "{0}_{1}".format(n['node_id'], n.get('_started', False))
             for n in nodelist)
         envlist_repr = list('{0}:[{1}]'.format(k, nodelist_repr(v))
-                            for (k, v) in self.environments.iteritems())
+                            for (k, v) in self.environments.items())
         return ' '.join(envlist_repr)
 
 class DummyConfigManager(object):

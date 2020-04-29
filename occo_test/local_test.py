@@ -13,7 +13,7 @@
 ### limitations under the License.
 
 import unittest
-from common import *
+from .common import *
 import occo.infraprocessor as ip
 import occo.plugins.infraprocessor.basic_infraprocessor
 import occo.plugins.infraprocessor.node_resolution.chef_cloudinit
@@ -78,13 +78,13 @@ class LocalTest(unittest.TestCase):
     def test_create_multiple_nodes(self):
         infrap = ip.InfraProcessor.instantiate('basic')
         eid = uid()
-        nodes = list(DummyNode(eid) for i in xrange(5))
+        nodes = list(DummyNode(eid) for i in range(5))
         cmd_cre = infrap.cri_create_infrastructure(eid)
         cmd_crns = (infrap.cri_create_node(node) for node in nodes)
         infrap.push_instructions(eid, cmd_cre)
         nodes = infrap.push_instructions(eid, cmd_crns)
         self.assertEqual(len(self.ib.environments), 1)
-        self.assertEqual(len(self.ib.environments.values()[0]), 5)
+        self.assertEqual(len(list(self.ib.environments.values())[0]), 5)
     def test_cancel_pending(self):
         # Coverage only
         infrap = ip.InfraProcessor.instantiate('basic')

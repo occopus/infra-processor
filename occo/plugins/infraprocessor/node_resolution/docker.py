@@ -17,7 +17,7 @@
 
 """
 
-from __future__ import absolute_import
+
 
 __all__ = ['DockerResolver']
 
@@ -36,6 +36,9 @@ PROTOCOL_ID = 'docker'
 
 log = logging.getLogger('occo.infraprocessor.node_resolution.docker')
 datalog = logging.getLogger('occo.data.infraprocessor.node_resolution.docker')
+
+def bencode(value):
+    return base64.b64encode(value.encode('utf-8'))
 
 @factory.register(Resolver, PROTOCOL_ID)
 class DockerResolver(Resolver):
@@ -68,17 +71,17 @@ class DockerResolver(Resolver):
         Recursively render attributes.
         """
         if isinstance(attrs, dict):
-            for k, v in attrs.iteritems():
+            for k, v in attrs.items():
                 attrs[k] = self.attr_template_resolve(v, template_data, context)
             return attrs
         elif isinstance(attrs, list):
-            for i in xrange(len(attrs)):
+            for i in range(len(attrs)):
                 attrs[i] = self.attr_template_resolve(attrs[i], template_data, context)
             return attrs
-        elif isinstance(attrs, basestring):
+        elif isinstance(attrs, str):
             loader = jinja2.FileSystemLoader('.')
             env = jinja2.Environment(loader=loader)
-            env.filters['b64encode'] = base64.b64encode
+            env.filters['b64encode'] = bencode
             template = env.from_string(attrs)
             return template.render(context, **template_data)
         else:
@@ -93,7 +96,7 @@ class DockerResolver(Resolver):
             dict(source_role="{0}_{1}".format(node['infra_id'], role),
                  source_attribute=mapping['attributes'][0],
                  destination_attribute=mapping['attributes'][1])
-            for role, mappings in attr_mapping.iteritems()
+            for role, mappings in attr_mapping.items()
             for mapping in mappings
         ]
 
@@ -131,7 +134,7 @@ class DockerResolver(Resolver):
         outedges = node_desc.get('mappings', dict()).get('outbound', dict())
 
         return [mapping['attributes'][0]
-                for mappings in outedges.itervalues() for mapping in mappings
+                for mappings in outedges.values() for mapping in mappings
                 if mapping['synch']]
 
     def assemble_template_data(self, node_desc, node_definition):
@@ -165,12 +168,21 @@ class DockerResolver(Resolver):
             return inputstr[start:end]
 
         def getip(node_name):
-            return main_info_broker.get('node.resource.address',
+            nra = main_info_broker.get('node.resource.address',
+                  find_node_id(node_name, allnodes=False))
+            return nra[0] if isinstance(nra,list) else nra
+
+        def getprivip(node_name):
+            return main_info_broker.get('node.resource.ip_address',
                    find_node_id(node_name, allnodes=False))
 
         def getipall(node_name):
-            return [ main_info_broker.get('node.resource.address', node)
-                     for node in find_node_id(node_name, allnodes=True) ]
+            l = list()
+            for node in find_node_id(node_name, allnodes=True):
+              nra = main_info_broker.get('node.resource.address', node)
+              l = l[:] + [nra[0]] if isinstance(nra,list) else l[:] + [nra]
+            return l
+
         # As long as source_data is read-only, the following code is fine.
         # As it is used only for rendering a template, it is yet read-only.
         # If, for any reason, something starts modifying it, dict.update()-s

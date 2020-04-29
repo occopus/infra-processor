@@ -23,7 +23,7 @@ to implement higher level synchronizations.
 These primitives are exposed through a the InfoBroker system.
 """
 
-from __future__ import absolute_import
+
 
 __all__ = ['SynchronizationProvider', 'CompositeStatus', 'status_component',
            'StatusTag']
@@ -102,7 +102,8 @@ class SynchronizationProvider(ib.InfoProvider):
     @util.wet_method('127.0.0.1')
     def get_server_address(self, **node_spec):
         inst = ib.main_info_broker.get('node.find_one', **node_spec)
-        return ib.main_info_broker.get('node.resource.address', inst)
+        nra = ib.main_info_broker.get('node.resource.address', inst)
+        return nra[0] if isinstance(nra,list) else nra
 
     @ib.provides('synch.node_reachable')
     @ib.provides('node.network_reachable')
@@ -124,12 +125,12 @@ class SynchronizationProvider(ib.InfoProvider):
     @ib.provides('synch.port_available')
     @util.wet_method(True)
     def port_available(self, host, port):
-	import socket
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-	    s.connect((host, port))
-	    s.shutdown(2)
-	    s.close()
+            s.connect((host, port))
+            s.shutdown(2)
+            s.close()
         except:
             return False
         else:
@@ -183,8 +184,8 @@ class SynchronizationProvider(ib.InfoProvider):
 
         details = util.dict_map(dynamic_state, self._get_instance_reports)
         ready = all(i['ready']
-                    for j in details.itervalues()
-                    for i in j.itervalues())
+                    for j in details.values()
+                    for i in j.values())
         return dict(details=details, ready=ready)
 
     @ib.provides('node.health_check.state')
