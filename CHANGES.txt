@@ -1,3 +1,6 @@
+v1.8 - Aug 2020
+- command is an optional parameter for docker
+
 v1.7 - Apr 2020
 - support for handling multi addresses of nodes
 - py3 porting
